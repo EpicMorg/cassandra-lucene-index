@@ -1,31 +1,26 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
 import com.google.common.base.MoreObjects;
 import com.stratio.cassandra.lucene.IndexException;
-import com.stratio.cassandra.lucene.column.Column;
 import com.stratio.cassandra.lucene.column.Columns;
-import com.stratio.cassandra.lucene.util.DateParser;
-import org.apache.cassandra.db.marshal.*;
+import com.stratio.cassandra.lucene.common.DateParser;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeStrategy;
@@ -33,15 +28,14 @@ import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.NRShape;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 
 /**
  * A {@link Mapper} to map 1-dimensional date ranges.
  *
  * @author Andres de la Pena {@literal <adelapena@stratio.com>}
  */
-public class DateRangeMapper extends Mapper {
+public class DateRangeMapper extends MultipleColumnMapper {
 
     /** The name of the column containing the from date. */
     public final String from;
@@ -49,11 +43,8 @@ public class DateRangeMapper extends Mapper {
     /** The name of the column containing the to date. */
     public final String to;
 
-    /** The date format pattern. */
-    public final String pattern;
-
     /** The {@link DateParser}. */
-    private final DateParser dateParser;
+    public final DateParser parser;
 
     private final DateRangePrefixTree tree;
 
@@ -67,23 +58,10 @@ public class DateRangeMapper extends Mapper {
      * @param validated if the field must be validated
      * @param from the name of the column containing the from date
      * @param to the name of the column containing the to date
-     * @param pattern the date format pattern
+     * @param pattern the date pattern
      */
     public DateRangeMapper(String field, Boolean validated, String from, String to, String pattern) {
-        super(field,
-              true,
-              false,
-              validated,
-              null,
-              Arrays.asList(from, to),
-              AsciiType.instance,
-              UTF8Type.instance,
-              Int32Type.instance,
-              LongType.instance,
-              IntegerType.instance,
-              SimpleDateType.instance,
-              TimestampType.instance,
-              TimeUUIDType.instance);
+        super(field, validated, Arrays.asList(from, to), DATE_TYPES);
 
         if (StringUtils.isBlank(from)) {
             throw new IndexException("from column name is required");
@@ -95,29 +73,26 @@ public class DateRangeMapper extends Mapper {
 
         this.from = from;
         this.to = to;
-        this.tree = DateRangePrefixTree.INSTANCE;
-        this.strategy = new NumberRangePrefixTreeStrategy(tree, field);
-        this.pattern = pattern == null ? DateParser.DEFAULT_PATTERN : pattern;
-        this.dateParser = new DateParser(this.pattern);
+        this.parser = new DateParser(pattern);
+        tree = DateRangePrefixTree.INSTANCE;
+        strategy = new NumberRangePrefixTreeStrategy(tree, field);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void addFields(Document document, Columns columns) {
+    public List<IndexableField> indexableFields(Columns columns) {
 
         Date fromDate = readFrom(columns);
         Date toDate = readTo(columns);
 
         if (fromDate == null && toDate == null) {
-            return;
+            return Collections.emptyList();
         }
 
         validate(fromDate, toDate);
 
         NRShape shape = makeShape(fromDate, toDate);
-        for (IndexableField field : strategy.createIndexableFields(shape)) {
-            document.add(field);
-        }
+        return Arrays.asList(strategy.createIndexableFields(shape));
     }
 
     private void validate(Date from, Date to) {
@@ -128,14 +103,14 @@ public class DateRangeMapper extends Mapper {
             throw new IndexException("To column required");
         }
         if (from.after(to)) {
-            throw new IndexException("From:'%s' is after To:'%s'", dateParser.toString(to), dateParser.toString(from));
+            throw new IndexException("From:'{}' is after To:'{}'", parser.toString(to), parser.toString(from));
         }
     }
 
     /** {@inheritDoc} */
     @Override
     public SortField sortField(String name, boolean reverse) {
-        throw new IndexException("Date range mapper '%s' does not support sorting", name);
+        throw new IndexException("Date range mapper '{}' does not support sorting", name);
     }
 
     /**
@@ -158,15 +133,7 @@ public class DateRangeMapper extends Mapper {
      * @return the start date
      */
     Date readFrom(Columns columns) {
-        Column<?> column = columns.getColumnsByFullName(from).getFirst();
-        if (column == null) {
-            return null;
-        }
-        Date fromDate = base(column.getComposedValue());
-        if (to == null) {
-            throw new IndexException("From date required");
-        }
-        return fromDate;
+        return parser.parse(columns.valueForField(from));
     }
 
     /**
@@ -176,15 +143,7 @@ public class DateRangeMapper extends Mapper {
      * @return the end date
      */
     Date readTo(Columns columns) {
-        Column<?> column = columns.getColumnsByFullName(to).getFirst();
-        if (column == null) {
-            return null;
-        }
-        Date toDate = base(column.getComposedValue());
-        if (toDate == null) {
-            throw new IndexException("To date required");
-        }
-        return toDate;
+        return parser.parse(columns.valueForField(to));
     }
 
     /**
@@ -195,7 +154,7 @@ public class DateRangeMapper extends Mapper {
      * @return the date represented by the specified object, or {@code null} if there is no one
      */
     public Date base(Object value) {
-        return dateParser.parse(value);
+        return parser.parse(value);
     }
 
     /** {@inheritDoc} */
@@ -206,7 +165,7 @@ public class DateRangeMapper extends Mapper {
                           .add("validated", validated)
                           .add("from", from)
                           .add("to", to)
-                          .add("pattern", pattern)
+                          .add("pattern", parser)
                           .toString();
     }
 }

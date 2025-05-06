@@ -1,24 +1,21 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.builder.index;
 
-import com.stratio.cassandra.lucene.builder.Builder;
+import com.stratio.cassandra.lucene.builder.JSONBuilder;
 import com.stratio.cassandra.lucene.builder.index.schema.Schema;
 import com.stratio.cassandra.lucene.builder.index.schema.analysis.Analyzer;
 import com.stratio.cassandra.lucene.builder.index.schema.mapping.Mapper;
@@ -28,12 +25,13 @@ import com.stratio.cassandra.lucene.builder.index.schema.mapping.Mapper;
  *
  * @author Andres de la Pena {@literal <adelapena@stratio.com>}
  */
-public class Index extends Builder {
+public class Index extends JSONBuilder {
 
     private Schema schema;
     private String keyspace;
     private String table;
     private String name;
+    private String column;
     private Number refreshSeconds;
     private String directoryPath;
     private Integer ramBufferMb;
@@ -41,9 +39,9 @@ public class Index extends Builder {
     private Integer maxCachedMb;
     private Integer indexingThreads;
     private Integer indexingQueuesSize;
-    private Integer tokenRangeCacheSize;
-    private Integer searchCacheSize;
     private String excludedDataCenters;
+    private Partitioner partitioner;
+    private Boolean sparse;
 
     /**
      * Builds a new {@link Index} creation statement for the specified table and column.
@@ -65,6 +63,17 @@ public class Index extends Builder {
      */
     public Index keyspace(String keyspace) {
         this.keyspace = keyspace;
+        return this;
+    }
+
+    /**
+     * Sets the name of the indexed column, if any.
+     *
+     * @param column the indexed column name
+     * @return this with the specified indexed column name
+     */
+    public Index column(String column) {
+        this.column = column;
         return this;
     }
 
@@ -146,28 +155,6 @@ public class Index extends Builder {
     }
 
     /**
-     * Sets the token range cache size.
-     *
-     * @param tokenRangeCacheSize the token range cache size
-     * @return this with the specified token range cache size
-     */
-    public Index tokenRangeCacheSize(Integer tokenRangeCacheSize) {
-        this.tokenRangeCacheSize = tokenRangeCacheSize;
-        return this;
-    }
-
-    /**
-     * Sets the max search cache size.
-     *
-     * @param searchCacheSize the search cache size
-     * @return this with the specified search cache size
-     */
-    public Index searchCacheSize(Integer searchCacheSize) {
-        this.searchCacheSize = searchCacheSize;
-        return this;
-    }
-
-    /**
      * Sets the list of excluded data centers.
      *
      * @param excludedDataCenters the excluded data centers
@@ -224,6 +211,35 @@ public class Index extends Builder {
         return this;
     }
 
+    /**
+     * Sets the {@link Partitioner}.
+     *
+     * Index partitioning is useful to speed up some queries to the detriment of others, depending on the implementation.
+     * It is also useful to overcome the Lucene's hard limit of 2147483519 documents per index.
+     *
+     * @param partitioner the {@link Partitioner}
+     * @return this with the specified partitioner
+     */
+    public Index partitioner(Partitioner partitioner) {
+        this.partitioner = partitioner;
+        return this;
+    }
+
+    /**
+     * Sets if the index is sparse or not
+     *
+     * Any insert or update will trigger an index modification by default, even if the statement does not contain any column that could affect the index.
+     * When sparse is true, the index is updated only if the statement contains at least one column that could affect it.
+     * It is useful when the index schema contains only a small subset of the row columns and those columns are updated less frequently then the rest of the row.
+     *
+     * @param sparse true if the index is sparse, false otherwise
+     * @return this with the specified sparse flag set
+     */
+    public Index sparse(Boolean sparse) {
+        this.sparse = sparse;
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override
     public String build() {
@@ -231,7 +247,7 @@ public class Index extends Builder {
         sb.append("CREATE CUSTOM INDEX ");
         sb.append(name).append(" ");
         String fullTable = keyspace == null ? table : keyspace + "." + table;
-        sb.append(String.format("ON %s() ", fullTable));
+        sb.append(String.format("ON %s(%s) ", fullTable, column == null ? "" : column));
         sb.append("USING 'com.stratio.cassandra.lucene.Index' WITH OPTIONS = {");
         option(sb, "refresh_seconds", refreshSeconds);
         option(sb, "directory_path", directoryPath);
@@ -241,8 +257,8 @@ public class Index extends Builder {
         option(sb, "indexing_threads", indexingThreads);
         option(sb, "indexing_queues_size", indexingQueuesSize);
         option(sb, "excluded_data_centers", excludedDataCenters);
-        option(sb, "token_range_cache_size", tokenRangeCacheSize);
-        option(sb, "search_cache_size", searchCacheSize);
+        option(sb, "partitioner", partitioner);
+        option(sb, "sparse", sparse);
         sb.append(String.format("'schema':'%s'}", schema));
         return sb.toString();
     }

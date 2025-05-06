@@ -1,34 +1,35 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.stratio.cassandra.lucene.IndexException;
-import com.stratio.cassandra.lucene.search.condition.Condition;
+import com.stratio.cassandra.lucene.IndexPagingState;
+import com.stratio.cassandra.lucene.common.Builder;
+import com.stratio.cassandra.lucene.common.JsonSerializer;
 import com.stratio.cassandra.lucene.search.condition.builder.ConditionBuilder;
-import com.stratio.cassandra.lucene.search.sort.Sort;
-import com.stratio.cassandra.lucene.search.sort.builder.SortBuilder;
 import com.stratio.cassandra.lucene.search.sort.builder.SortFieldBuilder;
-import com.stratio.cassandra.lucene.util.Builder;
-import com.stratio.cassandra.lucene.util.JsonSerializer;
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.stratio.cassandra.lucene.util.ByteBufferUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Class for building a new {@link Search}.
@@ -37,67 +38,59 @@ import java.io.IOException;
  */
 public class SearchBuilder implements Builder<Search> {
 
-    /** The {@link Condition} for querying, maybe {@code null} meaning no querying. */
-    @JsonProperty("query")
-    private ConditionBuilder<?, ?> queryBuilder;
-
-    /** The {@link Condition} for filtering, maybe {@code null} meaning no filtering. */
+    /** The filtering conditions not participating in scoring. */
     @JsonProperty("filter")
-    private ConditionBuilder<?, ?> filterBuilder;
+    protected final List<ConditionBuilder<?, ?>> filter = new LinkedList<>();
 
-    /** The {@link Sort} for the query, maybe {@code null} meaning no filtering. */
+    /** The querying conditions participating in scoring. */
+    @JsonProperty("query")
+    protected final List<ConditionBuilder<?, ?>> query = new LinkedList<>();
+
+    /** The {@link SortFieldBuilder}s for the query. */
     @JsonProperty("sort")
-    private SortBuilder sortBuilder;
+    private final List<SortFieldBuilder> sort = new LinkedList<>();
 
     /** If this search must force the refresh the index before reading it. */
     @JsonProperty("refresh")
     private boolean refresh;
 
+    @JsonProperty("paging")
+    private String paging;
+
     /** Default constructor. */
-    public SearchBuilder() {
+    SearchBuilder() {
     }
 
     /**
-     * Sets the specified querying condition.
+     * Returns this builder with the specified filtering conditions not participating in scoring.
      *
-     * @param queryBuilder the querying condition to be set
-     * @return this builder with the specified querying condition
+     * @param builders the conditions to be added
+     * @return this builder with the specified conditions
      */
-    public SearchBuilder query(ConditionBuilder<?, ?> queryBuilder) {
-        this.queryBuilder = queryBuilder;
+    public SearchBuilder filter(ConditionBuilder<?, ?>... builders) {
+        filter.addAll(Arrays.asList(builders));
         return this;
     }
 
     /**
-     * Sets the specified filtering condition.
+     * Returns this builder with the specified querying conditions participating in scoring.
      *
-     * @param filterBuilder the filtering condition to be set
-     * @return this builder with the specified filtering condition
+     * @param builders the conditions to be added
+     * @return this builder with the specified conditions
      */
-    public SearchBuilder filter(ConditionBuilder<?, ?> filterBuilder) {
-        this.filterBuilder = filterBuilder;
+    public SearchBuilder query(ConditionBuilder<?, ?>... builders) {
+        query.addAll(Arrays.asList(builders));
         return this;
     }
 
     /**
-     * Sets the specified sorting.
+     * Adds the specified sorting fields.
      *
-     * @param sortBuilder The sorting fields to be set.
-     * @return this builder with the specified sort
+     * @param builders the sorting fields to be added
+     * @return this builder with the specified sorting fields
      */
-    public SearchBuilder sort(SortBuilder sortBuilder) {
-        this.sortBuilder = sortBuilder;
-        return this;
-    }
-
-    /**
-     * Sets the specified sorting.
-     *
-     * @param sortFieldBuilders The sorting fields to be set.
-     * @return this builder with the specified sorting
-     */
-    public SearchBuilder sort(SortFieldBuilder... sortFieldBuilders) {
-        this.sortBuilder = new SortBuilder(sortFieldBuilders);
+    public SearchBuilder sort(SortFieldBuilder... builders) {
+        sort.addAll(Arrays.asList(builders));
         return this;
     }
 
@@ -115,15 +108,28 @@ public class SearchBuilder implements Builder<Search> {
     }
 
     /**
+     * Sets the specified starting partition key.
+     *
+     * @param pagingState a paging state
+     * @return this builder with the specified partition key
+     */
+    public SearchBuilder paging(IndexPagingState pagingState) {
+        this.paging = ByteBufferUtils.toHex(pagingState.toByteBuffer());
+        return this;
+    }
+
+    /**
      * Returns the {@link Search} represented by this builder.
      *
      * @return the search represented by this builder
      */
+    @Override
     public Search build() {
-        Condition query = queryBuilder == null ? null : queryBuilder.build();
-        Condition filter = filterBuilder == null ? null : filterBuilder.build();
-        Sort sort = sortBuilder == null ? null : sortBuilder.build();
-        return new Search(query, filter, sort, refresh);
+        return new Search(filter.stream().map(ConditionBuilder::build).collect(toList()),
+                          query.stream().map(ConditionBuilder::build).collect(toList()),
+                          sort.stream().map(SortFieldBuilder::build).collect(toList()),
+                          paging == null ? null : IndexPagingState.fromByteBuffer(ByteBufferUtils.byteBuffer(paging)),
+                          refresh);
     }
 
     /**
@@ -136,7 +142,7 @@ public class SearchBuilder implements Builder<Search> {
         try {
             return JsonSerializer.toString(this);
         } catch (IOException e) {
-            throw new IndexException(e, "Unformateable JSON search: %s", e.getMessage());
+            throw new IndexException(e, "Unformateable JSON search: {}", e.getMessage());
         }
     }
 
@@ -150,8 +156,7 @@ public class SearchBuilder implements Builder<Search> {
         try {
             return JsonSerializer.fromString(json, SearchBuilder.class);
         } catch (IOException e) {
-            throw new IndexException(e, "Unparseable JSON search: %s", e.getMessage());
+            return SearchBuilderLegacy.fromJson(json);
         }
     }
-
 }

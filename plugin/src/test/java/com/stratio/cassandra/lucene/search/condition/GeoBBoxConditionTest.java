@@ -1,29 +1,25 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.condition;
 
 import com.stratio.cassandra.lucene.IndexException;
 import com.stratio.cassandra.lucene.schema.Schema;
 import com.stratio.cassandra.lucene.search.condition.builder.GeoBBoxConditionBuilder;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.composite.IntersectsRPTVerifyQuery;
 import org.junit.Test;
 
 import static com.stratio.cassandra.lucene.schema.SchemaBuilders.*;
@@ -51,7 +47,7 @@ public class GeoBBoxConditionTest extends AbstractConditionTest {
     public void testBuildDefaults() {
         GeoBBoxConditionBuilder builder = new GeoBBoxConditionBuilder("name", 2D, 3D, 0D, 1D);
         GeoBBoxCondition condition = builder.build();
-        assertEquals("Boost is not to default", GeoBBoxCondition.DEFAULT_BOOST, condition.boost, 0);
+        assertNull("Boost is not set to default", condition.boost);
         assertEquals("Field is not set", "name", condition.field);
         assertEquals("Min longitude is not set", 0, condition.minLongitude, 0);
         assertEquals("Max longitude is not set", 1, condition.maxLongitude, 0);
@@ -85,7 +81,7 @@ public class GeoBBoxConditionTest extends AbstractConditionTest {
     }
 
     @Test(expected = IndexException.class)
-    public void testBuildTooBiglMinLongitude() {
+    public void testBuildTooBigMinLongitude() {
         new GeoBBoxCondition(null, "name", 2D, 3D, 181D, 1D);
     }
 
@@ -148,15 +144,13 @@ public class GeoBBoxConditionTest extends AbstractConditionTest {
     public void testQuery() {
         Schema schema = schema().mapper("name", geoPointMapper("lat", "lon").maxLevels(8)).build();
         GeoBBoxCondition condition = new GeoBBoxCondition(0.5f, "name", -90D, 90D, -180D, 180D);
-        Query query = condition.query(schema);
+        Query query = condition.doQuery(schema);
         assertNotNull("Query is wrong is not built", query);
-        assertTrue("Query type is wrong", query instanceof ConstantScoreQuery);
-        query = ((ConstantScoreQuery) query).getQuery();
-        assertTrue("Query type is wrong", query instanceof BooleanQuery);
+        assertEquals("Query type is wrong", IntersectsRPTVerifyQuery.class, query.getClass());
     }
 
     @Test(expected = IndexException.class)
-    public void testQueryoutValidMapper() {
+    public void testQueryInvalidMapper() {
         Schema schema = schema().mapper("name", uuidMapper()).build();
         GeoBBoxCondition condition = new GeoBBoxCondition(0.5f, "name", -90D, 90D, -180D, 180D);
         condition.query(schema);

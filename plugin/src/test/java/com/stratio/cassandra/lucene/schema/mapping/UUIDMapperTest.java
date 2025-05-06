@@ -1,21 +1,18 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
 import com.stratio.cassandra.lucene.IndexException;
@@ -45,25 +42,21 @@ public class UUIDMapperTest extends AbstractMapperTest {
         assertEquals("Column is not set to default value", "field", mapper.column);
         assertEquals("Mapped columns are not properly set", 1, mapper.mappedColumns.size());
         assertTrue("Mapped columns are not properly set", mapper.mappedColumns.contains("field"));
-        assertEquals("Indexed must be default", Mapper.DEFAULT_INDEXED, mapper.indexed);
-        assertEquals("Sorted must be default", Mapper.DEFAULT_SORTED, mapper.sorted);
     }
 
     @Test
     public void testConstructorWithAllArgs() {
-        UUIDMapper mapper = uuidMapper().indexed(false).sorted(true).column("column").build("field");
+        UUIDMapper mapper = uuidMapper().validated(true).column("column").build("field");
         assertEquals("Field is not properly set", "field", mapper.field);
         assertEquals("Column is not properly set", "column", mapper.column);
         assertEquals("Mapped columns are not properly set", 1, mapper.mappedColumns.size());
         assertTrue("Mapped columns are not properly set", mapper.mappedColumns.contains("column"));
-        assertFalse("Must be not indexed", mapper.indexed);
-        assertTrue("Must be sorted", mapper.sorted);
     }
 
     @Test
     public void testJsonSerialization() {
-        UUIDMapperBuilder builder = uuidMapper().indexed(false).sorted(true).column("column");
-        testJson(builder, "{type:\"uuid\",indexed:false,sorted:true,column:\"column\"}");
+        UUIDMapperBuilder builder = uuidMapper().column("column");
+        testJson(builder, "{type:\"uuid\",column:\"column\"}");
     }
 
     @Test
@@ -122,7 +115,7 @@ public class UUIDMapperTest extends AbstractMapperTest {
     @Test(expected = IndexException.class)
     public void testValueLong() {
         UUIDMapper mapper = uuidMapper().build("field");
-        String parsed = mapper.base("test", 3l);
+        String parsed = mapper.base("test", 3L);
         assertEquals("Base value is wrong", "3", parsed);
     }
 
@@ -144,8 +137,8 @@ public class UUIDMapperTest extends AbstractMapperTest {
     public void testIndexedField() {
         UUIDMapper mapper = uuidMapper().build("field");
         String base = mapper.base("name", "550e8400-e29b-41d4-a716-446655440000");
-        Field field = mapper.indexedField("name", base);
-        assertNotNull("Field must not be null", field);
+        Field field = mapper.indexedField("name", base)
+                            .orElseThrow(() -> new AssertionError("Indexed field is not created"));
         assertEquals("Field name is wrong", "name", field.name());
         assertEquals("Field value is wrong", base, field.stringValue());
         assertFalse("Field type is wrong", field.fieldType().stored());
@@ -155,9 +148,9 @@ public class UUIDMapperTest extends AbstractMapperTest {
     public void testSortedField() {
         UUIDMapper mapper = uuidMapper().build("field");
         String base = mapper.base("name", "550e8400-e29b-41d4-a716-446655440000");
-        Field field = mapper.sortedField("name", base);
-        assertNotNull("Field must not be null", field);
-        assertEquals("Doc values has wrong type", DocValuesType.SORTED, field.fieldType().docValuesType());
+        Field field = mapper.sortedField("name", base)
+                            .orElseThrow(() -> new AssertionError("Sorted field is not created"));
+        assertEquals("Doc values has wrong type", DocValuesType.SORTED_SET, field.fieldType().docValuesType());
     }
 
     @Test
@@ -307,22 +300,10 @@ public class UUIDMapperTest extends AbstractMapperTest {
         Collections.shuffle(uuids);
 
         List<UUID> expectedList = new ArrayList<>(uuids);
-        Collections.sort(expectedList, new Comparator<UUID>() {
-            @Override
-            public int compare(UUID o1, UUID o2) {
-                return type.compare(type.decompose(o1), type.decompose(o2));
-            }
-        });
+        expectedList.sort((UUID o1, UUID o2) -> type.compare(type.decompose(o1), type.decompose(o2)));
 
         List<UUID> actualList = new ArrayList<>(uuids);
-        Collections.sort(actualList, new Comparator<UUID>() {
-            @Override
-            public int compare(UUID o1, UUID o2) {
-                String s1 = UUIDMapper.serialize(o1);
-                String s2 = UUIDMapper.serialize(o2);
-                return s1.compareTo(s2);
-            }
-        });
+        actualList.sort(Comparator.comparing(UUIDMapper::serialize));
 
         assertEquals("Native and term comparisons are different", expectedList.size(), actualList.size());
         for (int i = 0; i < expectedList.size(); i++) {
@@ -352,9 +333,9 @@ public class UUIDMapperTest extends AbstractMapperTest {
 
     @Test
     public void testToString() {
-        UUIDMapper mapper = uuidMapper().indexed(false).sorted(true).validated(true).build("field");
+        UUIDMapper mapper = uuidMapper().validated(true).build("field");
         assertEquals("Method toString is wrong",
-                     "UUIDMapper{field=field, indexed=false, sorted=true, validated=true, column=field}",
+                     "UUIDMapper{field=field, validated=true, column=field}",
                      mapper.toString());
     }
 }

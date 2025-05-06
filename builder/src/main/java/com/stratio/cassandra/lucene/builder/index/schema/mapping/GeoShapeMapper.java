@@ -1,25 +1,22 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.builder.index.schema.mapping;
 
 import com.stratio.cassandra.lucene.builder.common.GeoTransformation;
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +32,7 @@ public class GeoShapeMapper extends Mapper<GeoShapeMapper> {
     @JsonProperty("column")
     String column;
 
-    /** The maximum number of levels in the tree. */
+    /** The maximum number of levels in the geohash search tree. */
     @JsonProperty("max_levels")
     Integer maxLevels;
 
@@ -55,10 +52,13 @@ public class GeoShapeMapper extends Mapper<GeoShapeMapper> {
     }
 
     /**
-     * Sets the maximum number of levels in the tree.
+     * Sets the maximum number of levels in the geohash search tree. False positives will be discarded using stored doc
+     * values, so a low value doesn't mean precision lost. High values will produce few false positives to
+     * be post-filtered, at the expense of creating many terms in the search index. This can be specially costly in
+     * large polygons, which can produce thousands of terms in case of using large geohash values.
      *
-     * @param maxLevels the maximum number of levels in the tree
-     * @return this with hte specified max number of levels
+     * @param maxLevels the maximum number of levels in the geohash search tree
+     * @return this with the specified max number of levels
      */
     public GeoShapeMapper maxLevels(Integer maxLevels) {
         this.maxLevels = maxLevels;

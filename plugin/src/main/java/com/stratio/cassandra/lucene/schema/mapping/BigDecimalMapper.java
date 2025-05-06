@@ -1,25 +1,21 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
 import com.stratio.cassandra.lucene.IndexException;
-import org.apache.cassandra.db.marshal.*;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
@@ -55,33 +51,16 @@ public class BigDecimalMapper extends KeywordMapper {
      *
      * @param field the name of the field
      * @param column the name of the column to be mapped
-     * @param indexed if the field supports searching
-     * @param sorted if the field supports sorting
      * @param validated if the field must be validated
      * @param integerDigits the max number of digits for the integer part, defaults to {@link #DEFAULT_INTEGER_DIGITS}
-     * @param decimalDigits The max number of digits for the decimal part, defaults to {@link #DEFAULT_DECIMAL_DIGITS}
+     * @param decimalDigits the max number of digits for the decimal part, defaults to {@link #DEFAULT_DECIMAL_DIGITS}
      */
     public BigDecimalMapper(String field,
                             String column,
-                            Boolean indexed,
-                            Boolean sorted,
                             Boolean validated,
                             Integer integerDigits,
                             Integer decimalDigits) {
-        super(field,
-              column,
-              indexed,
-              sorted,
-              validated,
-              ByteType.instance,
-              DecimalType.instance,
-              DoubleType.instance,
-              FloatType.instance,
-              IntegerType.instance,
-              Int32Type.instance,
-              LongType.instance,
-              ShortType.instance,
-              UTF8Type.instance);
+        super(field, column, validated, NUMERIC_TYPES);
 
         // Setup integer part mapping
         if (integerDigits != null && integerDigits <= 0) {
@@ -110,7 +89,7 @@ public class BigDecimalMapper extends KeywordMapper {
         try {
             bd = new BigDecimal(value.toString());
         } catch (NumberFormatException e) {
-            throw new IndexException("Field '%s' requires a base 10 decimal, but found '%s'", name, value);
+            throw new IndexException("Field '{}' requires a base 10 decimal, but found '{}'", name, value);
         }
 
         // Split integer and decimal part
@@ -130,7 +109,7 @@ public class BigDecimalMapper extends KeywordMapper {
     private void validateIntegerPart(String name, Object value, String[] parts) {
         String integerPart = parts[0];
         if (integerPart.replaceFirst("-", "").length() > integerDigits) {
-            throw new IndexException("Field '%s' with value '%s' has more than %d integer digits",
+            throw new IndexException("Field '{}' with value '{}' has more than %d integer digits",
                                      name,
                                      value,
                                      integerDigits);
@@ -140,7 +119,7 @@ public class BigDecimalMapper extends KeywordMapper {
     private void validateDecimalPart(String name, Object value, String[] parts) {
         String decimalPart = parts.length == 1 ? "0" : parts[1];
         if (decimalPart.length() > decimalDigits) {
-            throw new IndexException("Field '%s' with value '%s' has more than %d decimal digits",
+            throw new IndexException("Field '{}' with value '{}' has more than %d decimal digits",
                                      name,
                                      value,
                                      decimalDigits);

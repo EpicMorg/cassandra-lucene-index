@@ -1,21 +1,18 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.condition;
 
 import com.google.common.base.MoreObjects;
@@ -35,22 +32,28 @@ import java.util.Arrays;
  */
 public class ContainsCondition extends SingleColumnCondition {
 
+    /** The default use doc values option. */
+    public static final boolean DEFAULT_DOC_VALUES = false;
+
     /** The name of the field to be matched. */
     public final String field;
 
     /** The value of the field to be matched. */
     public final Object[] values;
 
+    /** If the generated query should use doc values. */
+    public final boolean docValues;
+
     /**
      * Constructor using the field name and the value to be matched.
      *
      * @param boost The boost for this query clause. Documents matching this clause will (in addition to the normal
-     * weightings) have their score multiplied by {@code boost}. If {@code null}, then {@link #DEFAULT_BOOST} is used as
-     * default.
+     * weightings) have their score multiplied by {@code boost}.
      * @param field the name of the field to be matched
      * @param values the value of the field to be matched
+     * @param docValues if the generated query should use doc values
      */
-    public ContainsCondition(Float boost, String field, Object... values) {
+    public ContainsCondition(Float boost, String field, Boolean docValues, Object... values) {
         super(boost, field);
 
         if (values == null || values.length == 0) {
@@ -59,28 +62,23 @@ public class ContainsCondition extends SingleColumnCondition {
 
         this.field = field;
         this.values = values;
+        this.docValues = docValues == null ? DEFAULT_DOC_VALUES : docValues;
     }
 
     /** {@inheritDoc} */
     @Override
-    public Query query(SingleColumnMapper<?> mapper, Analyzer analyzer) {
+    public Query doQuery(SingleColumnMapper<?> mapper, Analyzer analyzer) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (Object value : values) {
-            MatchCondition condition = new MatchCondition(boost, field, value);
-            builder.add(condition.query(mapper, analyzer), BooleanClause.Occur.SHOULD);
+            MatchCondition condition = new MatchCondition(null, field, value, docValues);
+            builder.add(condition.doQuery(mapper, analyzer), BooleanClause.Occur.SHOULD);
         }
-        Query query = builder.build();
-        query.setBoost(boost);
-        return query;
+        return builder.build();
     }
 
     /** {@inheritDoc} */
     @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                          .add("boost", boost)
-                          .add("field", field)
-                          .add("values", Arrays.toString(values))
-                          .toString();
+    public MoreObjects.ToStringHelper toStringHelper() {
+        return toStringHelper(this).add("values", Arrays.toString(values)).add("docValues", docValues);
     }
 }

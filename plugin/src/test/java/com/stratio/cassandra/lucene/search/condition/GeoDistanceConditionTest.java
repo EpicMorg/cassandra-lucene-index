@@ -1,21 +1,18 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.condition;
 
 import com.stratio.cassandra.lucene.IndexException;
@@ -23,9 +20,8 @@ import com.stratio.cassandra.lucene.common.GeoDistance;
 import com.stratio.cassandra.lucene.schema.Schema;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.prefix.IntersectsPrefixTreeFilter;
+import org.apache.lucene.spatial.composite.IntersectsRPTVerifyQuery;
 import org.junit.Test;
 
 import static com.stratio.cassandra.lucene.schema.SchemaBuilders.*;
@@ -61,7 +57,7 @@ public class GeoDistanceConditionTest extends AbstractConditionTest {
                                                                   -180D,
                                                                   null,
                                                                   GeoDistance.parse("1yd"));
-        assertEquals("Boost is not to default", Condition.DEFAULT_BOOST, condition.boost, 0);
+        assertNull("Boost is not set to default", condition.boost);
         assertEquals("Field is not set", "name", condition.field);
         assertEquals("Longitude is not set", -180, condition.longitude, 0);
         assertEquals("Latitude is not set", 90, condition.latitude, 0);
@@ -133,21 +129,15 @@ public class GeoDistanceConditionTest extends AbstractConditionTest {
                                                                   -180D,
                                                                   null,
                                                                   GeoDistance.parse("10hm"));
-        Query query = condition.query(schema);
+        Query query = condition.doQuery(schema);
         assertNotNull("Query is not built", query);
         BooleanQuery booleanQuery = (BooleanQuery) query;
         assertEquals("Query num clauses is wrong", 1, booleanQuery.clauses().size());
         BooleanClause maxClause = booleanQuery.clauses().get(0);
         assertEquals("Query occur is wrong", BooleanClause.Occur.FILTER, maxClause.getOccur());
         query = maxClause.getQuery();
-        assertTrue("Query type is wrong", query instanceof ConstantScoreQuery);
-        query = ((ConstantScoreQuery) query).getQuery();
-        assertTrue("Query type is wrong", query instanceof IntersectsPrefixTreeFilter);
-        IntersectsPrefixTreeFilter filter = (IntersectsPrefixTreeFilter) query;
-        assertEquals("Query is wrong",
-                     "IntersectsPrefixTreeFilter(fieldName=name.dist,queryShape=Circle(Pt(x=-180.0,y=90.0), " +
-                     "d=0.0° 1.00km),detailLevel=8,prefixGridScanLevel=4)",
-                     filter.toString());
+        assertEquals("Query type is wrong", IntersectsRPTVerifyQuery.class, query.getClass());
+        assertEquals("Query is wrong", "IntersectsVerified(fieldName=)", query.toString());
     }
 
     @Test(expected = IndexException.class)
@@ -164,7 +154,7 @@ public class GeoDistanceConditionTest extends AbstractConditionTest {
                                                                   -180D,
                                                                   GeoDistance.parse("1km"),
                                                                   GeoDistance.parse("3km"));
-        Query query = condition.query(schema);
+        Query query = condition.doQuery(schema);
         assertNotNull("Query is not built", query);
         assertTrue("Query type is wrong", query instanceof BooleanQuery);
         BooleanQuery booleanQuery = (BooleanQuery) query;
@@ -173,26 +163,15 @@ public class GeoDistanceConditionTest extends AbstractConditionTest {
         BooleanClause minClause = booleanQuery.clauses().get(1);
         assertEquals("Query is wrong", BooleanClause.Occur.MUST_NOT, minClause.getOccur());
         query = minClause.getQuery();
-        assertTrue("Query is wrong", query instanceof ConstantScoreQuery);
-        query = ((ConstantScoreQuery) query).getQuery();
-        assertTrue("Query is wrong", query instanceof IntersectsPrefixTreeFilter);
-        IntersectsPrefixTreeFilter minFilter = (IntersectsPrefixTreeFilter) query;
-        assertEquals("Query is wrong",
-                     "IntersectsPrefixTreeFilter(fieldName=name.dist,queryShape=Circle(Pt(x=-180.0,y=90.0), " +
-                     "d=0.0° 1.00km),detailLevel=8,prefixGridScanLevel=4)",
-                     minFilter.toString());
+        assertEquals("Query is wrong", IntersectsRPTVerifyQuery.class, query.getClass());
+        IntersectsRPTVerifyQuery minFilter = (IntersectsRPTVerifyQuery) query;
+        assertEquals("Query is wrong", "IntersectsVerified(fieldName=)", minFilter.toString());
 
         BooleanClause maxClause = booleanQuery.clauses().get(0);
         assertEquals("Query is wrong", BooleanClause.Occur.FILTER, maxClause.getOccur());
         query = maxClause.getQuery();
-        assertTrue("Query type is wrong", query instanceof ConstantScoreQuery);
-        query = ((ConstantScoreQuery) query).getQuery();
-        assertTrue("Query type is wrong", query instanceof IntersectsPrefixTreeFilter);
-        IntersectsPrefixTreeFilter maxFilter = (IntersectsPrefixTreeFilter) query;
-        assertEquals("Query is wrong",
-                     "IntersectsPrefixTreeFilter(fieldName=name.dist,queryShape=Circle(Pt(x=-180.0,y=90.0), " +
-                     "d=0.0° 3.00km),detailLevel=8,prefixGridScanLevel=4)",
-                     maxFilter.toString());
+        assertEquals("Query type is wrong", IntersectsRPTVerifyQuery.class, query.getClass());
+        assertEquals("Query is wrong", "IntersectsVerified(fieldName=)", query.toString());
     }
 
     @Test(expected = IndexException.class)
@@ -207,7 +186,7 @@ public class GeoDistanceConditionTest extends AbstractConditionTest {
         GeoDistanceCondition condition = geoDistance("name", -1D, 9, "3km").setMinDistance("1km").boost(0.4f).build();
         assertEquals("Method #toString is wrong",
                      "GeoDistanceCondition{boost=0.4, field=name, " +
-                     "latitude=9.0, longitude=-1.0, " +
+                     "latitude=-1.0, longitude=9.0, " +
                      "minGeoDistance=GeoDistance{value=1.0, unit=KILOMETRES}, " +
                      "maxGeoDistance=GeoDistance{value=3.0, unit=KILOMETRES}}",
                      condition.toString());

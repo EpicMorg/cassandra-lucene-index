@@ -1,24 +1,19 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
-
-import org.apache.cassandra.db.marshal.*;
 
 /**
  * A {@link Mapper} to map a string, not tokenized field.
@@ -38,37 +33,11 @@ public class StringMapper extends KeywordMapper {
      *
      * @param field the name of the field
      * @param column the name of the column to be mapped
-     * @param indexed if the field supports searching
-     * @param sorted if the field supports sorting
      * @param validated if the field must be validated
      * @param caseSensitive if the analyzer must be case sensitive
      */
-    public StringMapper(String field,
-                        String column,
-                        Boolean indexed,
-                        Boolean sorted,
-                        Boolean validated,
-                        Boolean caseSensitive) {
-        super(field,
-              column,
-              indexed,
-              sorted,
-              validated,
-              AsciiType.instance,
-              BooleanType.instance,
-              BytesType.instance,
-              ByteType.instance,
-              DoubleType.instance,
-              FloatType.instance,
-              InetAddressType.instance,
-              IntegerType.instance,
-              Int32Type.instance,
-              LongType.instance,
-              ShortType.instance,
-              TimestampType.instance,
-              TimeUUIDType.instance,
-              UTF8Type.instance,
-              UUIDType.instance);
+    public StringMapper(String field, String column, Boolean validated, Boolean caseSensitive) {
+        super(field, column, validated, PRINTABLE_TYPES);
         this.caseSensitive = caseSensitive == null ? DEFAULT_CASE_SENSITIVE : caseSensitive;
     }
 

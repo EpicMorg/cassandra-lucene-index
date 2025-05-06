@@ -1,33 +1,30 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.stratio.cassandra.lucene.IndexException;
+import com.stratio.cassandra.lucene.common.JsonSerializer;
 import com.stratio.cassandra.lucene.schema.analysis.AnalyzerBuilder;
 import com.stratio.cassandra.lucene.schema.analysis.ClasspathAnalyzerBuilder;
 import com.stratio.cassandra.lucene.schema.analysis.StandardAnalyzers;
 import com.stratio.cassandra.lucene.schema.mapping.Mapper;
 import com.stratio.cassandra.lucene.schema.mapping.builder.MapperBuilder;
-import com.stratio.cassandra.lucene.util.JsonSerializer;
 import org.apache.lucene.analysis.Analyzer;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -126,7 +123,7 @@ public class SchemaBuilder {
                     try {
                         defaultAnalyzer = (new ClasspathAnalyzerBuilder(defaultAnalyzerName)).analyzer();
                     } catch (Exception e) {
-                        throw new IndexException(e, "Not found analyzer: '%s'", defaultAnalyzerName);
+                        throw new IndexException(e, "Not found analyzer: '{}'", defaultAnalyzerName);
                     }
                 }
                 analyzers.put(defaultAnalyzerName, defaultAnalyzer);
@@ -144,7 +141,7 @@ public class SchemaBuilder {
         try {
             return JsonSerializer.toString(this);
         } catch (IOException e) {
-            throw new IndexException(e, "Unformateable JSON schema: %s", e.getMessage());
+            throw new IndexException(e, "Unformateable JSON schema: {}", e.getMessage());
         }
     }
 
@@ -158,7 +155,7 @@ public class SchemaBuilder {
         try {
             return JsonSerializer.fromString(json, SchemaBuilder.class);
         } catch (IOException e) {
-            throw new IndexException(e, "Unparseable JSON schema: %s", e.getMessage());
+            throw new IndexException(e, "Unparseable JSON schema: {}: {}", e.getMessage(), json);
         }
     }
 

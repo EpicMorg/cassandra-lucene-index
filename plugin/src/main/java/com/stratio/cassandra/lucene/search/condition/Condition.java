@@ -1,30 +1,28 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.condition;
 
 import com.google.common.base.MoreObjects;
 import com.stratio.cassandra.lucene.schema.Schema;
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
+
+import java.util.Set;
 
 /**
  * The abstract base class for queries.
@@ -38,43 +36,74 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Condition {
 
-    protected static final Logger logger = LoggerFactory.getLogger(Condition.class);
-
-    /** The default boost to be used. */
-    public static final float DEFAULT_BOOST = 1.0f;
-
     /** The boost to be used. */
-    public final float boost;
+    public final Float boost;
 
     /**
      * Abstract {@link Condition} builder receiving the boost to be used.
      *
-     * @param boost The boost for this query clause. Documents matching this clause will (in addition to the normal
+     * @param boost the boost for this query clause. Documents matching this clause will (in addition to the normal
      * weightings) have their score multiplied by {@code boost}.
      */
     public Condition(Float boost) {
-        this.boost = boost == null ? DEFAULT_BOOST : boost;
+        this.boost = boost;
     }
 
     /**
      * Returns the Lucene {@link Query} representation of this condition.
      *
      * @param schema the schema to be used
-     * @return The Lucene query
+     * @return the Lucene query
      */
-    public abstract Query query(Schema schema);
+    public final Query query(Schema schema) {
+        Query query = doQuery(schema);
+        return boost == null ? query : new BoostQuery(query, boost);
+    }
 
     /**
-     * Returns the Lucene {@link Filter} representation of this condition.
+     * Returns the Lucene {@link Query} representation of this condition without boost.
      *
      * @param schema the schema to be used
-     * @return the Lucene filter
+     * @return the Lucene query
      */
-    public Filter filter(Schema schema) {
-        return new QueryWrapperFilter(query(schema));
+    protected abstract Query doQuery(Schema schema);
+
+    /**
+     * Returns the names of the involved fields.
+     *
+     * @return the names of the involved fields
+     */
+    public abstract Set<String> postProcessingFields();
+
+    static BytesRef docValue(String value) {
+        return value == null ? null : new BytesRef(value);
+    }
+
+    static Long docValue(Long value) {
+        return value == null ? null : value;
+    }
+
+    static Long docValue(Integer value) {
+        return value == null ? null : value.longValue();
+    }
+
+    static Long docValue(Float value) {
+        return value == null ? null : docValue(NumericUtils.floatToSortableInt(value));
+    }
+
+    static Long docValue(Double value) {
+        return value == null ? null : NumericUtils.doubleToSortableLong(value);
     }
 
     protected MoreObjects.ToStringHelper toStringHelper(Object o) {
         return MoreObjects.toStringHelper(o).add("boost", boost);
+    }
+
+    protected abstract MoreObjects.ToStringHelper toStringHelper();
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        return toStringHelper().toString();
     }
 }

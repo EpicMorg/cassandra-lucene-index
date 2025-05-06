@@ -1,27 +1,23 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.sort;
 
-import com.stratio.cassandra.lucene.column.Columns;
 import com.stratio.cassandra.lucene.schema.Schema;
 
-import java.util.Comparator;
+import java.util.Set;
 
 /**
  * A sorting for a field of a search.
@@ -47,15 +43,6 @@ public abstract class SortField {
     }
 
     /**
-     * Returns if natural order should be reversed.
-     *
-     * @return {@code true} if natural order should be reversed, {@code false} otherwise.
-     */
-    public boolean isReverse() {
-        return reverse;
-    }
-
-    /**
      * Returns the Lucene's {@link org.apache.lucene.search.SortField} representing this {@link SortField}.
      *
      * @param schema the {@link Schema} to be used
@@ -64,25 +51,11 @@ public abstract class SortField {
     public abstract org.apache.lucene.search.SortField sortField(Schema schema);
 
     /**
-     * Returns a Java {@link Comparator} for {@link Columns} with the same logic as this {@link SortField}.
+     * Returns the names of the involved fields.
      *
-     * @param schema the used {@link Schema}
-     * @return the columns comparator
+     * @return the names of the involved fields
      */
-    public abstract Comparator<Columns> comparator(Schema schema);
-
-    @SuppressWarnings("unchecked")
-    protected int compare(Comparable column1, Comparable column2) {
-        if (column1 == null) {
-            return column2 == null ? 0 : 1;
-        } else if (column2 == null) {
-            return -1;
-        } else if (reverse) {
-            return column2.compareTo(column1);
-        } else {
-            return column1.compareTo(column2);
-        }
-    }
+    public abstract Set<String> postProcessingFields();
 
     /** {@inheritDoc} */
     @Override

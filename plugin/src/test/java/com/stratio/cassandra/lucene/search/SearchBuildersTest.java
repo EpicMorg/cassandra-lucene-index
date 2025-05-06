@@ -1,21 +1,18 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search;
 
 import com.stratio.cassandra.lucene.search.condition.*;
@@ -87,11 +84,12 @@ public class SearchBuildersTest {
 
     @Test
     public void testPhrase() throws IOException {
-        PhraseConditionBuilder builder = phrase("field", "value1 value2");
+        PhraseConditionBuilder builder = phrase("field", "value1 value2").slop(2);
         assertNotNull("Condition builder is not built", builder);
         PhraseCondition condition = builder.build();
         assertEquals("Condition field is not set", "field", condition.field);
         assertEquals("Condition value is not set", "value1 value2", condition.value);
+        assertEquals("Condition slop is not set", 2, condition.slop);
     }
 
     @Test
@@ -135,15 +133,5 @@ public class SearchBuildersTest {
         assertNotNull("Condition builder is not built", builder);
         SimpleSortField sortField = builder.build();
         assertEquals("Field is not set", "field", sortField.field);
-    }
-
-    @Test
-    public void testSort() throws IOException {
-        SearchBuilder builder = sort(field("field"));
-        assertNotNull("Condition builder is not built", builder);
-        Search search = builder.build();
-        assertEquals("Field is not set",
-                     "field",
-                     ((SimpleSortField) search.getSort().getSortFields().iterator().next()).field);
     }
 }

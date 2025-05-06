@@ -1,27 +1,24 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.builder.search.condition;
 
-import com.stratio.cassandra.lucene.builder.Builder;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.annotate.JsonSubTypes;
-import org.codehaus.jackson.annotate.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.stratio.cassandra.lucene.builder.JSONBuilder;
 
 /**
  * The abstract base class for queries.
@@ -51,7 +48,7 @@ import org.codehaus.jackson.annotate.JsonTypeInfo;
                @JsonSubTypes.Type(value = RangeCondition.class, name = "range"),
                @JsonSubTypes.Type(value = RegexpCondition.class, name = "regexp"),
                @JsonSubTypes.Type(value = WildcardCondition.class, name = "wildcard")})
-public abstract class Condition extends Builder {
+public abstract class Condition<T extends Condition> extends JSONBuilder {
 
     /** The boost for the {@code Condition} to be built. */
     @JsonProperty("boost")
@@ -65,9 +62,9 @@ public abstract class Condition extends Builder {
      * @return this with the specified boost
      */
     @SuppressWarnings("unchecked")
-    public Condition boost(float boost) {
+    public T boost(float boost) {
         this.boost = boost;
-        return this;
+        return (T) this;
     }
 
     /**
@@ -78,8 +75,8 @@ public abstract class Condition extends Builder {
      * @return this with the specified boost
      */
     @SuppressWarnings("unchecked")
-    public Condition boost(Number boost) {
+    public T boost(Number boost) {
         this.boost = boost == null ? null : boost.floatValue();
-        return this;
+        return (T) this;
     }
 }

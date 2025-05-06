@@ -1,54 +1,68 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.testsAT.util;
 
+import com.stratio.cassandra.lucene.builder.index.Partitioner;
+import com.stratio.cassandra.lucene.builder.index.schema.analysis.Analyzer;
 import com.stratio.cassandra.lucene.builder.index.schema.mapping.Mapper;
 import com.stratio.cassandra.lucene.builder.index.schema.mapping.SingleColumnMapper;
 
 import java.util.*;
 
 import static com.stratio.cassandra.lucene.builder.Builder.*;
-import static com.stratio.cassandra.lucene.testsAT.util.CassandraConfig.INDEX;
-import static com.stratio.cassandra.lucene.testsAT.util.CassandraConfig.TABLE;
+import static com.stratio.cassandra.lucene.testsAT.util.CassandraConfig.*;
 
 /**
  * @author Andres de la Pena {@literal <adelapena@stratio.com>}
  */
 public class CassandraUtilsBuilder {
 
-    private final String name;
+    private final String keyspace;
     private String table = TABLE;
-    private String index = INDEX;
+    private String indexName = INDEX;
+    private String indexColumn = COLUMN;
+    private Boolean useNewQuerySyntax = USE_NEW_QUERY_SYNTAX;
     private Map<String, String> columns;
     private Map<String, Mapper> mappers;
+    private Map<String, Analyzer> analyzers;
     private List<String> partitionKey;
     private List<String> clusteringKey;
+    private String clusteringOrderColumn;
+    private boolean clusteringOrderAscending;
+    private Partitioner partitioner = PARTITIONER;
+    private boolean sparse = SPARSE;
+
     private final Map<String, Map<String, String>> udts;
 
-    CassandraUtilsBuilder(String name) {
-        super();
-        this.name = name;
+    CassandraUtilsBuilder(String keyspacePrefix) {
+        this.keyspace = truncateKeyspaceName((keyspacePrefix + "_" + Math.abs(new Random().nextLong())), 48);
         this.columns = new HashMap<>();
         this.mappers = new HashMap<>();
+        this.analyzers = new HashMap<>();
         this.partitionKey = new ArrayList<>();
         this.clusteringKey = new ArrayList<>();
         this.udts = new LinkedHashMap<>();
+    }
+
+    private static String truncateKeyspaceName(String input, int limit) {
+        if (input.length()>limit) {
+             return input.substring(0, limit-1);
+        } else {
+             return input;
+        }
     }
 
     public CassandraUtilsBuilder withTable(String table) {
@@ -56,8 +70,18 @@ public class CassandraUtilsBuilder {
         return this;
     }
 
-    public CassandraUtilsBuilder withIndex(String index) {
-        this.index = index;
+    public CassandraUtilsBuilder withIndexName(String index) {
+        this.indexName = index;
+        return this;
+    }
+
+    public CassandraUtilsBuilder withIndexColumn(String indexedColumn) {
+        this.indexColumn = indexedColumn;
+        return this;
+    }
+
+    public CassandraUtilsBuilder withUseNewQuerySyntax(Boolean useNewQuerySyntax) {
+        this.useNewQuerySyntax = useNewQuerySyntax;
         return this;
     }
 
@@ -74,9 +98,6 @@ public class CassandraUtilsBuilder {
         String baseType = type.replaceAll("(.*)(<|,)", "").replace(">", "");
         SingleColumnMapper<?> mapper = defaultMapper(baseType);
         if (mapper != null) {
-            if (baseType.equals(type)) {
-                mapper.sorted(true);
-            }
             mappers.put(name, mapper);
         }
         return this;
@@ -87,9 +108,6 @@ public class CassandraUtilsBuilder {
         if (createMapper) {
             String baseType = type.replaceAll("(.*)(<|,)", "").replace(">", "");
             SingleColumnMapper<?> mapper = defaultMapper(baseType);
-            if (baseType.equals(type)) {
-                mapper.sorted(true);
-            }
             mappers.put(name, mapper);
         }
         return this;
@@ -120,7 +138,28 @@ public class CassandraUtilsBuilder {
         return this;
     }
 
-    public SingleColumnMapper<?> defaultMapper(String name) {
+    public CassandraUtilsBuilder withAnalyzer(String name, Analyzer analyzer) {
+        analyzers.put(name, analyzer);
+        return this;
+    }
+
+    public CassandraUtilsBuilder withClusteringOrder(String columnName, boolean ascending) {
+        clusteringOrderColumn = columnName;
+        clusteringOrderAscending = ascending;
+        return this;
+    }
+
+    public CassandraUtilsBuilder withPartitioner(Partitioner partitioner) {
+        this.partitioner = partitioner;
+        return this;
+    }
+
+    public CassandraUtilsBuilder withSparse(boolean sparse) {
+        this.sparse = sparse;
+        return this;
+    }
+
+    private SingleColumnMapper<?> defaultMapper(String name) {
         switch (name) {
             case "ascii":
                 return stringMapper();
@@ -147,7 +186,7 @@ public class CassandraUtilsBuilder {
             case "text":
                 return textMapper();
             case "timestamp":
-                return dateMapper().pattern("yyyy/MM/dd");
+                return dateMapper().pattern("yyyy/MM/dd HH:mm:ss.SSS");
             case "timeuuid":
                 return uuidMapper();
             case "tinyint":
@@ -164,7 +203,20 @@ public class CassandraUtilsBuilder {
     }
 
     public CassandraUtils build() {
-        String keyspace = name + "_" + Math.abs(new Random().nextLong());
-        return new CassandraUtils(keyspace, table, index, columns, mappers, partitionKey, clusteringKey, udts);
+        return new CassandraUtils(keyspace,
+                                  table,
+                                  indexName,
+                                  indexColumn,
+                                  useNewQuerySyntax,
+                                  columns,
+                                  mappers,
+                                  analyzers,
+                                  partitionKey,
+                                  clusteringKey,
+                                  udts,
+                                  clusteringOrderColumn,
+                                  clusteringOrderAscending,
+                                  partitioner,
+                                  sparse);
     }
 }

@@ -20,12 +20,10 @@ hose {
         [
             'CASSANDRA': [
                 'image': 'stratio/cassandra-lucene-index:%%VERSION',
-                'volumes':[ 'jts:1.14.0'],
-                'env': [
-                    'MAX_HEAP=256M',
+                'volumes':['jts:1.14.0'],
+                'env': [ 'MAX_HEAP=256M',
                     'START_JOLOKIA=true',
-                    'JOLOKIA_OPTS="port=8000,host=*"'
-                ],
+                    'JOLOKIA_OPTS="port=8000,host=*"'],
                 'sleep': 30,
                 'healthcheck': 9042
             ]
@@ -37,10 +35,9 @@ hose {
         | -Dit.jmx_port=8000
         | -Dit.monitor_service=jolokia
         | -DJACOCO_SERVER=%%CASSANDRA"""
-
     
     DEV = { config ->
-
+    
         doCompile(config)
         doUT(config)
         doPackage(config)
@@ -51,7 +48,7 @@ hose {
             doStaticAnalysis(config)
         }, DEPLOY: {
             doDeploy(config)
-        }, DOCKER : {
+        }, DOCKER : {    
             doDocker(config)
         }, failFast: config.FAILFAST)
 

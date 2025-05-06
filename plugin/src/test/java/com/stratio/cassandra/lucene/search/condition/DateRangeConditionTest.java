@@ -1,29 +1,25 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.condition;
 
 import com.stratio.cassandra.lucene.IndexException;
 import com.stratio.cassandra.lucene.schema.Schema;
 import com.stratio.cassandra.lucene.search.condition.builder.DateRangeConditionBuilder;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.prefix.IntersectsPrefixTreeFilter;
+import org.apache.lucene.spatial.prefix.IntersectsPrefixTreeQuery;
 import org.junit.Test;
 
 import static com.stratio.cassandra.lucene.schema.SchemaBuilders.*;
@@ -36,8 +32,6 @@ import static org.junit.Assert.*;
  * @author Andres de la Pena {@literal <adelapena@stratio.com>}
  */
 public class DateRangeConditionTest extends AbstractConditionTest {
-
-    private static final String TIMESTAMP_PATTERN = "timestamp";
 
     @Test
     public void testBuildString() {
@@ -74,7 +68,7 @@ public class DateRangeConditionTest extends AbstractConditionTest {
         DateRangeConditionBuilder builder = new DateRangeConditionBuilder("field");
         DateRangeCondition condition = builder.build();
         assertNotNull("Condition is not built", condition);
-        assertEquals("Boost is not set to default", DEFAULT_BOOST, condition.boost, 0);
+        assertNull("Boost is not set to default", condition.boost);
         assertEquals("Field is not set", "field", condition.field);
         assertEquals("From is not set to default", DEFAULT_FROM, condition.from);
         assertEquals("To is not set to default", DEFAULT_TO, condition.to);
@@ -156,26 +150,47 @@ public class DateRangeConditionTest extends AbstractConditionTest {
 
     @Test
     public void testQuery() {
-
-        Schema schema = schema().mapper("name", dateRangeMapper("to", "from").pattern(TIMESTAMP_PATTERN)).build();
-
-        DateRangeCondition condition = new DateRangeCondition(null, "name", 1L, 2L, null);
+        Schema schema = schema().mapper("name", dateRangeMapper("from", "to").pattern("yyyyMMdd Z")).build();
+        DateRangeCondition condition = dateRange("name").from("20160305 PST").to("20160405 PST").build();
         Query query = condition.query(schema);
         assertNotNull("Query is not built", query);
-        assertTrue("Query type is wrong", query instanceof ConstantScoreQuery);
-        query = ((ConstantScoreQuery) query).getQuery();
-        assertTrue("Query type is wrong", query instanceof IntersectsPrefixTreeFilter);
-        IntersectsPrefixTreeFilter filter = (IntersectsPrefixTreeFilter) query;
+        assertEquals("Query type is wrong", IntersectsPrefixTreeQuery.class, query.getClass());
         assertEquals("Query is wrong",
-                     "IntersectsPrefixTreeFilter(fieldName=name,queryShape=" +
-                     "[1970-01-01T00:00:00.001 TO 1970-01-01T00:00:00.002],detailLevel=9,prefixGridScanLevel=7)",
-                     filter.toString());
+                     "IntersectsPrefixTreeQuery(fieldName=name,queryShape=" +
+                     "[2016-03-05T08 TO 2016-04-05T08:00:00.000],detailLevel=9,prefixGridScanLevel=7)",
+                     query.toString());
+    }
+
+    @Test
+    public void testQueryOpenStart() {
+        Schema schema = schema().mapper("name", dateRangeMapper("from", "to").pattern("yyyyMMdd Z")).build();
+        DateRangeCondition condition = dateRange("name").to("20160305 PST").build();
+        Query query = condition.query(schema);
+        assertNotNull("Query is not built", query);
+        assertEquals("Query type is wrong", IntersectsPrefixTreeQuery.class, query.getClass());
+        assertEquals("Query is wrong",
+                     "IntersectsPrefixTreeQuery(fieldName=name,queryShape=" +
+                     "[-292269054-12-02T16:47:04.192 TO 2016-03-05T08:00:00.000],detailLevel=9,prefixGridScanLevel=7)",
+                     query.toString());
+    }
+
+    @Test
+    public void testQueryOpenStop() {
+        Schema schema = schema().mapper("name", dateRangeMapper("from", "to").pattern("yyyyMMdd Z")).build();
+        DateRangeCondition condition = dateRange("name").from("20160305 PST").build();
+        Query query = condition.query(schema);
+        assertNotNull("Query is not built", query);
+        assertEquals("Query type is wrong", IntersectsPrefixTreeQuery.class, query.getClass());
+        assertEquals("Query is wrong",
+                     "IntersectsPrefixTreeQuery(fieldName=name,queryShape=" +
+                     "[2016-03-05T08 TO 292278994-08-17T07:12:55.807],detailLevel=9,prefixGridScanLevel=7)",
+                     query.toString());
     }
 
     @Test(expected = IndexException.class)
     public void testQueryWithoutValidMapper() {
         Schema schema = schema().mapper("name", uuidMapper()).build();
-        DateRangeCondition condition = new DateRangeCondition(null, "name", 1, 2, null);
+        DateRangeCondition condition = dateRange("name").from(1L).to(2L).build();
         condition.query(schema);
     }
 

@@ -1,27 +1,24 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.common;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.base.MoreObjects;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.stratio.cassandra.lucene.IndexException;
-import org.codehaus.jackson.annotate.JsonCreator;
 
 /**
  * Class representing a geographical distance.
@@ -91,7 +88,7 @@ public final class GeoDistance implements Comparable<GeoDistance> {
             double value = Double.parseDouble(json);
             return new GeoDistance(value, GeoDistanceUnit.METRES);
         } catch (Exception e) {
-            throw new IndexException(e, "Unparseable distance: %s", json);
+            throw new IndexException(e, "Unparseable distance: {}", json);
         }
     }
 
@@ -119,7 +116,6 @@ public final class GeoDistance implements Comparable<GeoDistance> {
         }
 
         GeoDistance that = (GeoDistance) o;
-
         return Double.compare(that.value, value) == 0 && unit == that.unit;
 
     }

@@ -1,29 +1,29 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
 import com.stratio.cassandra.lucene.IndexException;
 import com.stratio.cassandra.lucene.schema.mapping.builder.IntegerMapperBuilder;
+import org.apache.cassandra.serializers.SimpleDateSerializer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.SortField;
 import org.junit.Test;
+
+import java.util.Date;
 
 import static com.stratio.cassandra.lucene.schema.SchemaBuilders.integerMapper;
 import static org.junit.Assert.*;
@@ -34,8 +34,7 @@ public class IntegerMapperTest extends AbstractMapperTest {
     public void testConstructorWithoutArgs() {
         IntegerMapper mapper = integerMapper().build("field");
         assertEquals("Field is not properly set", "field", mapper.field);
-        assertEquals("Indexed is not set to default value", Mapper.DEFAULT_INDEXED, mapper.indexed);
-        assertEquals("Sorted is not set to default value", Mapper.DEFAULT_SORTED, mapper.sorted);
+        assertEquals("Validated is not set to default value", Mapper.DEFAULT_VALIDATED, mapper.validated);
         assertEquals("Column is not set to default value", "field", mapper.column);
         assertEquals("Mapped columns are not properly set", 1, mapper.mappedColumns.size());
         assertTrue("Mapped columns are not properly set", mapper.mappedColumns.contains("field"));
@@ -44,10 +43,9 @@ public class IntegerMapperTest extends AbstractMapperTest {
 
     @Test
     public void testConstructorWithAllArgs() {
-        IntegerMapper mapper = integerMapper().indexed(false).sorted(true).column("column").boost(2.3f).build("field");
+        IntegerMapper mapper = integerMapper().validated(true).column("column").boost(2.3f).build("field");
         assertEquals("Field is not properly set", "field", mapper.field);
-        assertFalse("Indexed is not properly set", mapper.indexed);
-        assertTrue("Sorted is not properly set", mapper.sorted);
+        assertTrue("Validated is not properly set", mapper.validated);
         assertEquals("Column is not properly set", "column", mapper.column);
         assertEquals("Mapped columns are not properly set", 1, mapper.mappedColumns.size());
         assertTrue("Mapped columns are not properly set", mapper.mappedColumns.contains("column"));
@@ -56,8 +54,8 @@ public class IntegerMapperTest extends AbstractMapperTest {
 
     @Test
     public void testJsonSerialization() {
-        IntegerMapperBuilder builder = integerMapper().indexed(false).sorted(true).column("column").boost(0.3f);
-        testJson(builder, "{type:\"integer\",indexed:false,sorted:true,column:\"column\",boost:0.3}");
+        IntegerMapperBuilder builder = integerMapper().validated(true).column("column").boost(0.3f);
+        testJson(builder, "{type:\"integer\",validated:true,column:\"column\",boost:0.3}");
     }
 
     @Test
@@ -103,7 +101,7 @@ public class IntegerMapperTest extends AbstractMapperTest {
     @Test
     public void testValueLong() {
         IntegerMapper mapper = integerMapper().boost(1f).build("field");
-        Integer parsed = mapper.base("test", 3l);
+        Integer parsed = mapper.base("test", 3L);
         assertEquals("Base for longs is wrong", Integer.valueOf(3), parsed);
     }
 
@@ -133,7 +131,6 @@ public class IntegerMapperTest extends AbstractMapperTest {
         IntegerMapper mapper = integerMapper().boost(1f).build("field");
         Integer parsed = mapper.base("test", 3.5f);
         assertEquals("Base for floats is wrong", Integer.valueOf(3), parsed);
-
     }
 
     @Test
@@ -179,7 +176,6 @@ public class IntegerMapperTest extends AbstractMapperTest {
         IntegerMapper mapper = integerMapper().boost(1f).build("field");
         Integer parsed = mapper.base("test", "3.2");
         assertEquals("Base for strings is wrong", Integer.valueOf(3), parsed);
-
     }
 
     @Test
@@ -187,14 +183,21 @@ public class IntegerMapperTest extends AbstractMapperTest {
         IntegerMapper mapper = integerMapper().boost(1f).build("field");
         Integer parsed = mapper.base("test", "3.2");
         assertEquals("Base for strings is wrong", Integer.valueOf(3), parsed);
+    }
 
+    @Test
+    public void testValueWithDate() {
+        IntegerMapper mapper = integerMapper().boost(1f).build("field");
+        Integer parsed = mapper.base("test", new Date(10));
+        Integer expected = SimpleDateSerializer.timeInMillisToDay(10);
+        assertEquals("Base for dates is wrong", expected, parsed);
     }
 
     @Test
     public void testIndexedField() {
-        IntegerMapper mapper = integerMapper().indexed(true).boost(1f).build("field");
-        Field field = mapper.indexedField("name", 3);
-        assertNotNull("Indexed field is not created", field);
+        IntegerMapper mapper = integerMapper().boost(1f).build("field");
+        Field field = mapper.indexedField("name", 3)
+                            .orElseThrow(() -> new AssertionError("Indexed field is not created"));
         assertEquals("Indexed field value is wrong", 3, field.numericValue());
         assertEquals("Indexed field name is wrong", "name", field.name());
         assertFalse("Indexed field type is wrong", field.fieldType().stored());
@@ -202,10 +205,10 @@ public class IntegerMapperTest extends AbstractMapperTest {
 
     @Test
     public void testSortedField() {
-        IntegerMapper mapper = integerMapper().sorted(true).boost(1f).build("field");
-        Field field = mapper.sortedField("name", 3);
-        assertNotNull("Sorted field is not created", field);
-        assertEquals("Sorted field type is wrong", DocValuesType.NUMERIC, field.fieldType().docValuesType());
+        IntegerMapper mapper = integerMapper().boost(1f).build("field");
+        Field field = mapper.sortedField("name", 3)
+                            .orElseThrow(() -> new AssertionError("Sorted field is not created"));
+        assertEquals("Sorted field type is wrong", DocValuesType.SORTED_NUMERIC, field.fieldType().docValuesType());
     }
 
     @Test
@@ -216,9 +219,9 @@ public class IntegerMapperTest extends AbstractMapperTest {
 
     @Test
     public void testToString() {
-        IntegerMapper mapper = integerMapper().indexed(false).sorted(true).validated(true).boost(1f).build("field");
+        IntegerMapper mapper = integerMapper().validated(true).boost(1f).build("field");
         assertEquals("Method #toString is wrong",
-                     "IntegerMapper{field=field, indexed=false, sorted=true, validated=true, column=field, boost=1.0}",
+                     "IntegerMapper{field=field, validated=true, column=field, boost=1.0}",
                      mapper.toString());
     }
 }

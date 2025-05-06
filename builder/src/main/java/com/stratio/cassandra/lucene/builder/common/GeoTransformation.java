@@ -1,41 +1,45 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.builder.common;
 
-import com.stratio.cassandra.lucene.builder.Builder;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.annotate.JsonSubTypes;
-import org.codehaus.jackson.annotate.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.stratio.cassandra.lucene.builder.JSONBuilder;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Andres de la Pena {@literal <adelapena@stratio.com>}
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({@JsonSubTypes.Type(value = GeoTransformation.Buffer.class, name = "buffer"),
+@JsonSubTypes({@JsonSubTypes.Type(value = GeoTransformation.BBox.class, name = "bbox"),
+               @JsonSubTypes.Type(value = GeoTransformation.Buffer.class, name = "buffer"),
                @JsonSubTypes.Type(value = GeoTransformation.Centroid.class, name = "centroid"),
-               @JsonSubTypes.Type(value = GeoTransformation.Difference.class, name = "difference"),
-               @JsonSubTypes.Type(value = GeoTransformation.Intersection.class, name = "intersection"),
-               @JsonSubTypes.Type(value = GeoTransformation.Union.class, name = "union")})
-public abstract class GeoTransformation extends Builder {
+               @JsonSubTypes.Type(value = GeoTransformation.ConvexHull.class, name = "convex_hull")})
+public abstract class GeoTransformation extends JSONBuilder {
 
     /**
-     * {@link GeoTransformation} for getting the bounding shape of a JTS geographical shape.
+     * {@link GeoTransformation} that gets the bounding box of a JTS geographical shape. The bounding box of shape is
+     * the minimal rectangle containing the shape.
+     */
+    public static class BBox extends GeoTransformation {
+
+    }
+
+    /**
+     * {@link GeoTransformation} for getting the buffer around a JTS geographical shape.
      */
     public static class Buffer extends GeoTransformation {
 
@@ -78,62 +82,9 @@ public abstract class GeoTransformation extends Builder {
     }
 
     /**
-     * {@link GeoTransformation} that gets the difference of two JTS geographical shapes.
+     * {@link GeoTransformation} that gets the convex hull of a JTS geographical shape.
      */
-    public static class Difference extends GeoTransformation {
-
-        /** The other shape. */
-        @JsonProperty("shape")
-        public final String shape;
-
-        /**
-         * Constructor receiving the geometry to be subtracted.
-         *
-         * @param shape the geometry to be subtracted in WKT format
-         */
-        public Difference(String shape) {
-            this.shape = shape;
-        }
-
-    }
-
-    /**
-     * {@link GeoTransformation} that gets the intersection of two JTS geographical shapes.
-     */
-    public static class Intersection extends GeoTransformation {
-
-        /** The other shape. */
-        @JsonProperty("shape")
-        public final String shape;
-
-        /**
-         * Constructor receiving the geometry to be intersected.
-         *
-         * @param shape the geometry to be intersected in WKT format
-         */
-        public Intersection(String shape) {
-            this.shape = shape;
-        }
-
-    }
-
-    /**
-     * {@link GeoTransformation} that gets the union of two JTS geographical shapes.
-     */
-    public static class Union extends GeoTransformation {
-
-        /** The other shape. */
-        @JsonProperty("shape")
-        public final String shape;
-
-        /**
-         * Constructor receiving the geometry to be added.
-         *
-         * @param shape the geometry to be added in WKT format
-         */
-        public Union(String shape) {
-            this.shape = shape;
-        }
+    public static class ConvexHull extends GeoTransformation {
 
     }
 

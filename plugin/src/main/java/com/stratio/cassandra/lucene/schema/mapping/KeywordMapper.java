@@ -1,31 +1,30 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
-import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortField.Type;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.util.BytesRef;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * A {@link Mapper} to map a string, not tokenized field.
@@ -48,35 +47,31 @@ public abstract class KeywordMapper extends SingleColumnMapper.SingleFieldMapper
      *
      * @param field the name of the field
      * @param column the name of the column to be mapped
-     * @param indexed if the field supports searching
-     * @param sorted if the field supports sorting
      * @param validated if the field must be validated
      * @param supportedTypes the supported Cassandra types
      */
-    KeywordMapper(String field,
-                  String column,
-                  Boolean indexed,
-                  Boolean sorted,
-                  Boolean validated,
-                  AbstractType<?>... supportedTypes) {
-        super(field, column, indexed, sorted, validated, KEYWORD_ANALYZER, String.class, supportedTypes);
+    KeywordMapper(String field, String column, Boolean validated, List<Class<?>> supportedTypes) {
+        super(field, column, true, validated, KEYWORD_ANALYZER, String.class, supportedTypes);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Field indexedField(String name, String value) {
-        return new Field(name, value, FIELD_TYPE);
+    public Optional<Field> indexedField(String name, String value) {
+        validateTerm(name, new BytesRef(value));
+        return Optional.of(new Field(name, value, FIELD_TYPE));
     }
 
     /** {@inheritDoc} */
     @Override
-    public Field sortedField(String name, String value) {
-        return new SortedDocValuesField(name, new BytesRef(value));
+    public Optional<Field> sortedField(String name, String value) {
+        BytesRef bytes = new BytesRef(value);
+        validateTerm(name, bytes);
+        return Optional.of(new SortedSetDocValuesField(name, bytes));
     }
 
     /** {@inheritDoc} */
     @Override
     public final SortField sortField(String name, boolean reverse) {
-        return new SortField(name, Type.STRING_VAL, reverse);
+        return new SortedSetSortField(name, reverse);
     }
 }

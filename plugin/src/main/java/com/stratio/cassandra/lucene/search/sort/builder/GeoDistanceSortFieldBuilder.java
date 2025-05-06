@@ -1,64 +1,61 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.sort.builder;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.stratio.cassandra.lucene.search.sort.GeoDistanceSortField;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * @author Eduardo Alonso {@literal <eduardoalonso@stratio.com>}
  */
 public class GeoDistanceSortFieldBuilder extends SortFieldBuilder<GeoDistanceSortField, GeoDistanceSortFieldBuilder> {
 
-    /** The name of mapper to use to calculate distance. */
-    @JsonProperty("mapper")
-    final String mapper;
-
-    /** The longitude of the center point to sort by min distance to it. */
-    @JsonProperty("longitude")
-    final double longitude;
+    /** The name of the the geo point field mapper to use to calculate distance. */
+    @JsonProperty("field")
+    private final String field;
 
     /** The latitude of the center point to sort by min distance to it. */
     @JsonProperty("latitude")
-    final double latitude;
+    private final double latitude;
+
+    /** The longitude of the center point to sort by min distance to it. */
+    @JsonProperty("longitude")
+    private final double longitude;
 
     /**
      * Creates a new {@link GeoDistanceSortFieldBuilder} for the specified field.
      *
-     * @param mapper The name of mapper to use to calculate distance.
-     * @param longitude The longitude of the center point to sort by min distance to it.
-     * @param latitude The latitude of the center point to sort by min distance to it.
+     * @param field the name of the geo point field mapper to use to calculate distance
+     * @param latitude the latitude of the center point to sort by min distance to it
+     * @param longitude the longitude of the center point to sort by min distance to it
      */
     @JsonCreator
-    public GeoDistanceSortFieldBuilder(@JsonProperty("mapper") String mapper,
-                                       @JsonProperty("longitude") double longitude,
-                                       @JsonProperty("latitude") double latitude) {
+    public GeoDistanceSortFieldBuilder(@JsonProperty("field") String field,
+                                       @JsonProperty("latitude") double latitude,
+                                       @JsonProperty("longitude") double longitude) {
 
-        this.mapper = mapper;
-        this.longitude = longitude;
+        this.field = field;
         this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     /** {@inheritDoc} */
     @Override
     public GeoDistanceSortField build() {
-        return new GeoDistanceSortField(mapper, reverse, longitude, latitude);
+        return new GeoDistanceSortField(field, reverse, latitude, longitude);
     }
 }

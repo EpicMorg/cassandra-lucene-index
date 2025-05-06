@@ -1,21 +1,18 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.condition;
 
 import com.google.common.base.MoreObjects;
@@ -26,6 +23,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * A {@link Condition} implementation that matches documents satisfying a Lucene Query Syntax.
@@ -47,8 +47,7 @@ public class LuceneCondition extends Condition {
      * Constructor using the field name and the value to be matched.
      *
      * @param boost The boost for this query clause. Documents matching this clause will (in addition to the normal
-     * weightings) have their score multiplied by {@code boost}. If {@code null}, then {@link #DEFAULT_BOOST} is used as
-     * default.
+     * weightings) have their score multiplied by {@code boost}.
      * @param defaultField the default field name
      * @param query the Lucene Query Syntax query
      */
@@ -62,24 +61,36 @@ public class LuceneCondition extends Condition {
     }
 
     /** {@inheritDoc} */
+    public Set<String> postProcessingFields() {
+        Set<String> fields = new LinkedHashSet<>();
+        if (!StringUtils.isBlank(defaultField)) {
+            fields.add(defaultField);
+        }
+        for (String term : query.split("[ ]")) {
+            if (term.contains(":")) {
+                fields.add(term.split(":")[0]);
+            }
+        }
+        return fields;
+    }
+
+    /** {@inheritDoc} */
     @Override
-    public Query query(Schema schema) {
+    public Query doQuery(Schema schema) {
         try {
-            Analyzer analyzer = schema.getAnalyzer();
+            Analyzer analyzer = schema.analyzer;
             QueryParser queryParser = new QueryParser(defaultField, analyzer);
             queryParser.setAllowLeadingWildcard(true);
             queryParser.setLowercaseExpandedTerms(false);
-            Query luceneQuery = queryParser.parse(query);
-            luceneQuery.setBoost(boost);
-            return luceneQuery;
+            return queryParser.parse(query);
         } catch (ParseException e) {
-            throw new IndexException("Error while parsing lucene syntax query: %s", e.getMessage());
+            throw new IndexException("Error while parsing lucene syntax query: {}", e.getMessage());
         }
     }
 
     /** {@inheritDoc} */
     @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this).add("query", query).add("defaultField", defaultField).toString();
+    public MoreObjects.ToStringHelper toStringHelper() {
+        return toStringHelper(this).add("query", query).add("defaultField", defaultField);
     }
 }

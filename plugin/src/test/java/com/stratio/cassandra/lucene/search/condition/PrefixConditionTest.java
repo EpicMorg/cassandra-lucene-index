@@ -1,24 +1,20 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.condition;
 
-import com.stratio.cassandra.lucene.IndexException;
 import com.stratio.cassandra.lucene.schema.Schema;
 import com.stratio.cassandra.lucene.search.condition.builder.PrefixConditionBuilder;
 import org.apache.lucene.search.PrefixQuery;
@@ -26,8 +22,7 @@ import org.apache.lucene.search.Query;
 import org.junit.Test;
 
 import static com.stratio.cassandra.lucene.schema.SchemaBuilders.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * @author Andres de la Pena {@literal <adelapena@stratio.com>}
@@ -49,7 +44,7 @@ public class PrefixConditionTest extends AbstractConditionTest {
         PrefixConditionBuilder builder = new PrefixConditionBuilder("field", "value");
         PrefixCondition condition = builder.build();
         assertNotNull("Condition is not built", condition);
-        assertEquals("Boost is not set", Condition.DEFAULT_BOOST, condition.boost, 0);
+        assertNull("Boost is not set to default", condition.boost);
         assertEquals("Field is not set", "field", condition.field);
         assertEquals("Value is not set", "value", condition.value);
     }
@@ -72,7 +67,7 @@ public class PrefixConditionTest extends AbstractConditionTest {
         Schema schema = schema().mapper("name", stringMapper()).build();
 
         PrefixCondition prefixCondition = new PrefixCondition(0.5f, "name", "tr");
-        Query query = prefixCondition.query(schema);
+        Query query = prefixCondition.doQuery(schema);
 
         assertNotNull("Query is not built", query);
         assertEquals("Query type is wrong", PrefixQuery.class, query.getClass());
@@ -80,16 +75,6 @@ public class PrefixConditionTest extends AbstractConditionTest {
         PrefixQuery luceneQuery = (PrefixQuery) query;
         assertEquals("Query field is wrong", "name", luceneQuery.getField());
         assertEquals("Query prefix is wrong", "tr", luceneQuery.getPrefix().text());
-        assertEquals("Query boost is wrong", 0.5f, query.getBoost(), 0);
-    }
-
-    @Test(expected = IndexException.class)
-    public void testIntegerValue() {
-
-        Schema schema = schema().mapper("name", integerMapper().indexed(false)).build();
-
-        PrefixCondition prefixCondition = new PrefixCondition(0.5f, "name", "2*");
-        prefixCondition.query(schema);
     }
 
     @Test
@@ -98,7 +83,7 @@ public class PrefixConditionTest extends AbstractConditionTest {
         Schema schema = schema().mapper("name", inetMapper()).build();
 
         PrefixCondition wildcardCondition = new PrefixCondition(0.5f, "name", "192.168.");
-        Query query = wildcardCondition.query(schema);
+        Query query = wildcardCondition.doQuery(schema);
 
         assertNotNull("Query is not built", query);
         assertEquals("Query type is wrong", PrefixQuery.class, query.getClass());
@@ -106,7 +91,6 @@ public class PrefixConditionTest extends AbstractConditionTest {
         PrefixQuery luceneQuery = (PrefixQuery) query;
         assertEquals("Query field is wrong", "name", luceneQuery.getField());
         assertEquals("Query prefix is wrong", "192.168.", luceneQuery.getPrefix().text());
-        assertEquals("Query boost is wrong", 0.5f, query.getBoost(), 0);
     }
 
     @Test
@@ -115,7 +99,7 @@ public class PrefixConditionTest extends AbstractConditionTest {
         Schema schema = schema().mapper("name", inetMapper()).build();
 
         PrefixCondition wildcardCondition = new PrefixCondition(0.5f, "name", "2001:db8:2de:0:0:0:0:e");
-        Query query = wildcardCondition.query(schema);
+        Query query = wildcardCondition.doQuery(schema);
 
         assertNotNull("Query is not built", query);
         assertEquals("Query type is wrong", PrefixQuery.class, query.getClass());
@@ -123,13 +107,14 @@ public class PrefixConditionTest extends AbstractConditionTest {
         PrefixQuery luceneQuery = (PrefixQuery) query;
         assertEquals("Query field is wrong", "name", luceneQuery.getField());
         assertEquals("Query prefix is wrong", "2001:db8:2de:0:0:0:0:e", luceneQuery.getPrefix().text());
-        assertEquals("Query boost is wrong", 0.5f, query.getBoost(), 0);
     }
 
     @Test
     public void testToString() {
         PrefixCondition condition = new PrefixCondition(0.5f, "name", "tr");
-        assertEquals("Method #toString is wrong", "PrefixCondition{field=name, value=tr}", condition.toString());
+        assertEquals("Method #toString is wrong",
+                     "PrefixCondition{boost=0.5, field=name, value=tr}",
+                     condition.toString());
     }
 
 }

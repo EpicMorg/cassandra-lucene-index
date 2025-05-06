@@ -1,25 +1,22 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.builder.search.sort;
 
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A geo spatial distance search sort.
@@ -28,31 +25,31 @@ import org.codehaus.jackson.annotate.JsonProperty;
  */
 public class GeoDistanceSortField extends SortField {
 
-    /** The name of mapper to use to calculate distance. */
-    @JsonProperty("mapper")
-    final String mapper;
-
-    /** The longitude of the center point to sort by distance to it. */
-    @JsonProperty("longitude")
-    final double longitude;
+    /** The name of the geo point field mapper to use to calculate distance. */
+    @JsonProperty("field")
+    final String field;
 
     /** The latitude of the center point to sort by distance to it. */
     @JsonProperty("latitude")
     final double latitude;
 
+    /** The longitude of the center point to sort by distance to it. */
+    @JsonProperty("longitude")
+    final double longitude;
+
     /**
      * Creates a new {@link GeoDistanceSortField} for the specified field and reverse option.
      *
-     * @param mapper the name of the field to be used for sort
-     * @param longitude the longitude in degrees of the reference point
+     * @param field the name of the geo point field mapper to be used for sorting
      * @param latitude the latitude in degrees of the reference point
+     * @param longitude the longitude in degrees of the reference point
      */
     @JsonCreator
-    public GeoDistanceSortField(@JsonProperty("mapper") String mapper,
-                                @JsonProperty("longitude") double longitude,
-                                @JsonProperty("latitude") double latitude) {
-        this.mapper = mapper;
-        this.longitude = longitude;
+    public GeoDistanceSortField(@JsonProperty("field") String field,
+                                @JsonProperty("latitude") double latitude,
+                                @JsonProperty("longitude") double longitude) {
+        this.field = field;
         this.latitude = latitude;
+        this.longitude = longitude;
     }
 }

@@ -1,34 +1,30 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
 import com.google.common.base.MoreObjects;
 import com.stratio.cassandra.lucene.IndexException;
 import com.stratio.cassandra.lucene.column.Column;
 import com.stratio.cassandra.lucene.column.Columns;
-import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexableField;
 
 import javax.validation.constraints.NotNull;
-import java.util.Collections;
+import java.util.*;
 
 /**
  * Class for mapping between Cassandra's columns and Lucene documents.
@@ -49,87 +45,92 @@ public abstract class SingleColumnMapper<T extends Comparable<T>> extends Mapper
      *
      * @param field the name of the field
      * @param column the name of the column to be mapped
-     * @param indexed if the field supports searching
-     * @param sorted if the field supports sorting
+     * @param docValues if the mapper supports doc values
      * @param validated if the field must be validated
      * @param analyzer the name of the analyzer to be used
      * @param base the Lucene type for this mapper
-     * @param supportedTypes the supported Cassandra types for indexing
+     * @param supportedTypes the supported column value data types
      */
     public SingleColumnMapper(String field,
                               String column,
-                              Boolean indexed,
-                              Boolean sorted,
+                              Boolean docValues,
                               Boolean validated,
                               String analyzer,
                               Class<T> base,
-                              AbstractType<?>... supportedTypes) {
+                              List<Class<?>> supportedTypes) {
+        this(field, column, docValues, validated, analyzer, base, supportedTypes, EMPTY_TYPE_LIST);
+    }
+    /**
+     * Builds a new {@link SingleColumnMapper} supporting the specified types for indexing and clustering.
+     *
+     * @param field the name of the field
+     * @param column the name of the column to be mapped
+     * @param docValues if the mapper supports doc values
+     * @param validated if the field must be validated
+     * @param analyzer the name of the analyzer to be used
+     * @param base the Lucene type for this mapper
+     * @param supportedTypes the supported column value data types
+     * @param excludedTypes the explicitly excluded value data types
+     */
+    public SingleColumnMapper(String field,
+                              String column,
+                              Boolean docValues,
+                              Boolean validated,
+                              String analyzer,
+                              Class<T> base,
+                              List<Class<?>> supportedTypes,
+                              List<Class<?>> excludedTypes) {
         super(field,
-              indexed,
-              sorted,
+              docValues,
               validated,
               analyzer,
               Collections.singletonList(column == null ? field : column),
-              supportedTypes);
+              supportedTypes,
+              excludedTypes,
+              true);
 
         if (StringUtils.isWhitespace(column)) {
-            throw new IndexException("Column must not be whitespace, but found '%s'", column);
+            throw new IndexException("Column must not be whitespace, but found '{}'", column);
         }
 
         this.column = column == null ? field : column;
         this.base = base;
     }
 
-    public String getColumn() {
-        return column;
+    /** {@inheritDoc} */
+    @Override
+    public List<IndexableField> bestEffortIndexableFields(Columns columns) {
+        List<IndexableField> fields = new LinkedList<>();
+        columns.foreachWithMapper(column, c -> fields.addAll(bestEffort(c, this::indexableFields)));
+        return fields;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void addFields(Document document, Columns columns) {
-        for (Column<?> c : columns.getColumnsByMapperName(column)) {
-            String name = column.equals(field) ? c.getFullName() : c.getFieldName(field);
-            Object value = c.getComposedValue();
-            addFields(document, name, value);
-        }
+    public List<IndexableField> indexableFields(Columns columns) {
+        List<IndexableField> fields = new LinkedList<>();
+        columns.foreachWithMapper(column, c -> fields.addAll(indexableFields(c)));
+        return fields;
     }
 
-    /**
-     * Adds the specified column name and value to the specified {@link Document}.
-     *
-     * @param document a {@link Document}
-     * @param name the name of the column to be mapped
-     * @param value the value of the column to be mapped
-     */
-    private void addFields(Document document, String name, Object value) {
+    private List<IndexableField> indexableFields(Column c) {
+        String name = column.equals(field) ? c.field() : c.fieldName(field);
+        Object value = c.valueOrNull();
         if (value != null) {
-            T b = base(name, value);
-            if (indexed) {
-                addIndexedFields(document, name, b);
-            }
-            if (sorted) {
-                addSortedFields(document, name, b);
-            }
+            T base = base(c);
+            return indexableFields(name, base);
         }
+        return Collections.emptyList();
     }
 
     /**
      * Returns the {@link Field} to search for the mapped column.
      *
-     * @param document a {@link Document}
      * @param name the name of the column
      * @param value the value of the column
+     * @return a list of indexable fields
      */
-    public abstract void addIndexedFields(Document document, String name, T value);
-
-    /**
-     * Returns the {@link Field} to sort by the mapped column.
-     *
-     * @param document a {@link Document}
-     * @param name the name of the column
-     * @param value the value of the column
-     */
-    public abstract void addSortedFields(Document document, String name, T value);
+    public abstract List<IndexableField> indexableFields(String name, T value);
 
     /**
      * Returns the {@link Column} query value resulting from the mapping of the specified object.
@@ -142,7 +143,21 @@ public abstract class SingleColumnMapper<T extends Comparable<T>> extends Mapper
         return value == null ? null : doBase(field, value);
     }
 
-    protected abstract T doBase(String field, @NotNull Object value);
+    /**
+     * Returns the {@link Column} query value resulting from the mapping of the specified object.
+     *
+     * @param column the column
+     * @return the {@link Column} index value resulting from the mapping of the specified object
+     */
+    public final T base(Column column) {
+        return column == null ? null : column.valueOrNull() == null ? null : doBase(column);
+    }
+
+    protected abstract T doBase(@NotNull String field, @NotNull Object value);
+
+    protected final T doBase(Column column) {
+        return doBase(column.fieldName(field), column.valueOrNull());
+    }
 
     /** {@inheritDoc} */
     @Override
@@ -161,41 +176,36 @@ public abstract class SingleColumnMapper<T extends Comparable<T>> extends Mapper
      *
      * @param <T> the base type
      */
-    public static abstract class SingleFieldMapper<T extends Comparable<T>> extends SingleColumnMapper<T> {
+    public abstract static class SingleFieldMapper<T extends Comparable<T>> extends SingleColumnMapper<T> {
 
         /**
          * Builds a new {@link SingleFieldMapper} supporting the specified types for indexing and clustering.
          *
          * @param field the name of the field
          * @param column the name of the column to be mapped
-         * @param indexed if the field supports searching
-         * @param sorted if the field supports sorting
+         * @param docValues if the mapper supports doc values
          * @param validated if the field must be validated
          * @param analyzer the name of the analyzer to be used
          * @param base the Lucene type for this mapper
-         * @param supportedTypes the supported Cassandra types for indexing
+         * @param supportedTypes the supported column value data types
          */
         public SingleFieldMapper(String field,
                                  String column,
-                                 Boolean indexed,
-                                 Boolean sorted,
+                                 Boolean docValues,
                                  Boolean validated,
                                  String analyzer,
                                  Class<T> base,
-                                 AbstractType<?>... supportedTypes) {
-            super(field, column, indexed, sorted, validated, analyzer, base, supportedTypes);
+                                 List<Class<?>> supportedTypes) {
+            super(field, column, docValues, validated, analyzer, base, supportedTypes);
         }
 
         /** {@inheritDoc} */
         @Override
-        public void addIndexedFields(Document document, String name, T value) {
-            document.add(indexedField(name, value));
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public void addSortedFields(Document document, String name, T value) {
-            document.add(sortedField(name, value));
+        public List<IndexableField> indexableFields(String name, T value) {
+            List<IndexableField> fields = new ArrayList<>(2);
+            indexedField(name, value).ifPresent(fields::add);
+            sortedField(name, value).ifPresent(fields::add);
+            return fields;
         }
 
         /**
@@ -205,7 +215,7 @@ public abstract class SingleColumnMapper<T extends Comparable<T>> extends Mapper
          * @param value the value of the column
          * @return the field to sort by the mapped column
          */
-        public abstract Field indexedField(String name, T value);
+        public abstract Optional<Field> indexedField(String name, T value);
 
         /**
          * Returns the {@link Field} to sort by the mapped column.
@@ -214,7 +224,7 @@ public abstract class SingleColumnMapper<T extends Comparable<T>> extends Mapper
          * @param value the value of the column
          * @return the field to sort by the mapped column
          */
-        public abstract Field sortedField(String name, T value);
+        public abstract Optional<Field> sortedField(String name, T value);
     }
 
 }

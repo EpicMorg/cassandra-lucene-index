@@ -1,21 +1,18 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.testsAT.search;
 
 import java.util.LinkedHashMap;
@@ -46,12 +43,13 @@ public final class DataHelper {
         data1.put("lat", "40.442163");
         data1.put("long", "-3.784519");
         data1.put("text_1", "'Frase con espacios articulos y las palabras suficientes'");
+        data1.put("text_2", "'a'");
         data1.put("varchar_1", "'frase sencilla con espacios'");
         data1.put("uuid_1", "60297440-b4fa-11e3-8b5a-0002a5d5c51b");
         data1.put("timeuuid_1", "a4a70900-24e1-11df-8924-001ff3591711");
         data1.put("list_1", "['l1','l2']");
         data1.put("set_1", "{'s1','s2'}");
-        data1.put("map_1", "{'k1':'v1','k2':'v2'}");
+        data1.put("map_1", "{'k1':'v1','k2':'v2','k4':'a'}");
 
         data2 = new LinkedHashMap<>();
         data2.put("ascii_1", "'frasetipoasciisinespacios'");
@@ -67,12 +65,13 @@ public final class DataHelper {
         data2.put("lat", "40.575909");
         data2.put("long", "-3.616095");
         data2.put("text_1", "'Frasesinespaciosconarticulosylaspalabrassuficientes'");
+        data2.put("text_2", "'c'");
         data2.put("varchar_1", "'frasesencillasinespacios'");
         data2.put("uuid_1", "60297440-b4fa-11e3-8b5a-0002a5d5c51c");
         data2.put("timeuuid_1", "a4a70900-24e1-11df-8924-001ff3591712");
         data2.put("list_1", "['l1','l3']");
         data2.put("set_1", "{'s1','s3'}");
-        data2.put("map_1", "{'k1':'v1','k3':'v3'}");
+        data2.put("map_1", "{'k1':'v1','k3':'v3','k4':'c'}");
 
         data3 = new LinkedHashMap<>();
         data3.put("ascii_1", "'frasetipoasciisinespaciosperomaslarga'");
@@ -88,12 +87,13 @@ public final class DataHelper {
         data3.put("lat", "38.947994");
         data3.put("long", "-3.800156");
         data3.put("text_1", "'Frasesinespaciosconarticulosylaspalabrassuficientesperomaslarga'");
+        data3.put("text_2", "'b'");
         data3.put("varchar_1", "'frasesencillasinespaciosperomaslarga'");
         data3.put("uuid_1", "60297440-b4fa-11e3-8b5a-0002a5d5c51d");
         data3.put("timeuuid_1", "a4a70900-24e1-11df-8924-001ff3591713");
         data3.put("list_1", "['l2','l3']");
         data3.put("set_1", "{'s2','s3'}");
-        data3.put("map_1", "{'k2':'v2','k3':'v3'}");
+        data3.put("map_1", "{'k2':'v2','k3':'v3','k4':'b'}");
 
         data4 = new LinkedHashMap<>();
         data4.put("ascii_1", "'frasetipoasciisinespaciosperomaslargaaaa'");
@@ -109,12 +109,13 @@ public final class DataHelper {
         data4.put("lat", "42.546975");
         data4.put("long", "2.141841");
         data4.put("text_1", "'Frasesinespaciosconarticulosylaspalabrassuficientesperomaslargaaaaa  '");
+        data4.put("text_2", "'e'");
         data4.put("varchar_1", "'frasesencillasinespaciosperomaslarga'");
         data4.put("uuid_1", "60297440-b4fa-11e3-8b5a-0002a5d5c51d");
         data4.put("timeuuid_1", "a4a70900-24e1-11df-8924-001ff3591713");
         data4.put("list_1", "['l2','l3']");
         data4.put("set_1", "{'s2','s3'}");
-        data4.put("map_1", "{'k2':'v2','k3':'v3'}");
+        data4.put("map_1", "{'k2':'v2','k3':'v3','k4':'e'}");
 
         data5 = new LinkedHashMap<>(); ///
         data5.put("ascii_1", "'prase tipo ascii'");
@@ -130,12 +131,13 @@ public final class DataHelper {
         data5.put("lat", "49.791995");
         data5.put("long", "11.208648");
         data5.put("text_1", "'Prasesinespaciosconarticulosylaspalabrassuficientes'");
+        data5.put("text_2", "'d'");
         data5.put("varchar_1", "'prasesencillasinespaciosperomaslarga'");
         data5.put("uuid_1", "60297440-b4fa-11e3-8b5a-0002a5d5c51d");
         data5.put("timeuuid_1", "a4a70900-24e1-11df-8924-001ff3591713");
         data5.put("list_1", "['l2','l3']");
         data5.put("set_1", "{'s2','s3'}");
-        data5.put("map_1", "{'k2':'v2','k3':'v3'}");
+        data5.put("map_1", "{'k2':'v2','k3':'v3','k4':'d'}");
 
         data6 = new LinkedHashMap<>();
         data6.put("ascii_1", "'frase frase y una frase'");

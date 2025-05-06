@@ -1,32 +1,29 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.builder.search.condition;
 
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A {@link Condition} implementation that matches a field within an range of values.
  *
  * @author Andres de la Pena {@literal <adelapena@stratio.com>}
  */
-public class RangeCondition extends Condition {
+public class RangeCondition extends Condition<RangeCondition> {
 
     /** The name of the field to be matched. */
     @JsonProperty("field")
@@ -47,6 +44,10 @@ public class RangeCondition extends Condition {
     /** If the upper value must be included if not {@code null}. */
     @JsonProperty("include_upper")
     Boolean includeUpper;
+
+    /** If the generated query should use doc values. */
+    @JsonProperty("doc_values")
+    Boolean docValues;
 
     /**
      * Creates a new {@link RangeCondition} for the specified field.
@@ -99,6 +100,18 @@ public class RangeCondition extends Condition {
      */
     public RangeCondition includeUpper(Boolean includeUpper) {
         this.includeUpper = includeUpper;
+        return this;
+    }
+
+    /**
+     * Sets if the generated query should use doc values. Doc values queries are typically slower, but they can be
+     * faster in the dense case where most rows match the search.
+     *
+     * @param docValues if the generated query should use doc values
+     * @return this builder with the specified use doc values option.
+     */
+    public RangeCondition docValues(Boolean docValues) {
+        this.docValues = docValues;
         return this;
     }
 }

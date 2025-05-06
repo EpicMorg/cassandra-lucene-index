@@ -1,33 +1,28 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.search.sort;
 
 import com.google.common.base.MoreObjects;
 import com.stratio.cassandra.lucene.IndexException;
-import com.stratio.cassandra.lucene.column.Column;
-import com.stratio.cassandra.lucene.column.Columns;
 import com.stratio.cassandra.lucene.schema.Schema;
 import com.stratio.cassandra.lucene.schema.mapping.Mapper;
-import com.stratio.cassandra.lucene.schema.mapping.SingleColumnMapper;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Comparator;
+import java.util.Collections;
+import java.util.Set;
 
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
 
@@ -73,42 +68,19 @@ public class SimpleSortField extends SortField {
         if (field.equalsIgnoreCase("score")) {
             return FIELD_SCORE;
         }
-        Mapper mapper = schema.getMapper(field);
+        Mapper mapper = schema.mapper(field);
         if (mapper == null) {
-            throw new IndexException("No mapper found for sortFields field '%s'", field);
-        } else if (!mapper.sorted) {
-            throw new IndexException("Mapper '%s' is not sorted", mapper.field);
+            throw new IndexException("No mapper found for sortFields field '{}'", field);
+        } else if (!mapper.docValues) {
+            throw new IndexException("Field '{}' does not support sorting", field);
         } else {
             return mapper.sortField(field, reverse);
         }
     }
 
-    /**
-     * Returns a Java {@link Comparator} for {@link Columns} with the same logic as this {@link SortField}.
-     *
-     * @param schema the used {@link Schema}
-     * @return the equivalent columns comparator
-     */
-    public Comparator<Columns> comparator(Schema schema) {
-        final SingleColumnMapper mapper = schema.getSingleColumnMapper(field);
-        return (Columns o1, Columns o2) -> compare(mapper, o1, o2);
-    }
-
-    protected int compare(SingleColumnMapper mapper, Columns o1, Columns o2) {
-
-        if (o1 == null) {
-            return o2 == null ? 0 : 1;
-        } else if (o2 == null) {
-            return -1;
-        }
-
-        String column = mapper.getColumn();
-        Column<?> column1 = o1.getColumnsByFullName(column).getFirst();
-        Column<?> column2 = o2.getColumnsByFullName(column).getFirst();
-        Comparable base1 = column1 == null ? null : mapper.base(column, column1.getComposedValue());
-        Comparable base2 = column2 == null ? null : mapper.base(column, column2.getComposedValue());
-
-        return compare(base1, base2);
+    /** {@inheritDoc} */
+    public Set<String> postProcessingFields() {
+        return Collections.singleton(field);
     }
 
     /** {@inheritDoc} */

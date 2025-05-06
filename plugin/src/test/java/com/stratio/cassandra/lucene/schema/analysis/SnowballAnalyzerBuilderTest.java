@@ -1,25 +1,22 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.analysis;
 
 import com.stratio.cassandra.lucene.IndexException;
-import com.stratio.cassandra.lucene.util.JsonSerializer;
+import com.stratio.cassandra.lucene.common.JsonSerializer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -127,12 +124,6 @@ public class SnowballAnalyzerBuilderTest {
     }
 
     @Test
-    public void testBuildIrish() {
-        AnalyzerBuilder builder = new SnowballAnalyzerBuilder("Irish", null);
-        testAnalyzer(builder, "stuif", "stuif");
-    }
-
-    @Test
     public void testBuildHungarian() {
         AnalyzerBuilder builder = new SnowballAnalyzerBuilder("Hungarian", null);
         testAnalyzer(builder, "dolog", "dolog");
@@ -141,25 +132,7 @@ public class SnowballAnalyzerBuilderTest {
     @Test
     public void testBuildTurkish() {
         AnalyzerBuilder builder = new SnowballAnalyzerBuilder("Turkish", null);
-        testAnalyzer(builder, "tekneler", "tekne");
-    }
-
-    @Test
-    public void testBuildArmenian() {
-        AnalyzerBuilder builder = new SnowballAnalyzerBuilder("Armenian", null);
-        testAnalyzer(builder, "megy", "megy");
-    }
-
-    @Test
-    public void testBuildBasque() {
-        AnalyzerBuilder builder = new SnowballAnalyzerBuilder("Basque", null);
-        testAnalyzer(builder, "harrizko", "harri");
-    }
-
-    @Test
-    public void testBuildCatalan() {
-        AnalyzerBuilder builder = new SnowballAnalyzerBuilder("Catalan", null);
-        testAnalyzer(builder, "catalans", "catalan");
+        testAnalyzer(builder, "kitapçıdaki", "kitapçı");
     }
 
     @Test(expected = RuntimeException.class)

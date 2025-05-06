@@ -1,30 +1,30 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
 import com.stratio.cassandra.lucene.IndexException;
-import org.apache.cassandra.db.marshal.*;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
+import org.apache.lucene.search.SortedNumericSortField;
+
+import java.util.Date;
+import java.util.Optional;
 
 /**
  * A {@link Mapper} to map a long field.
@@ -44,29 +44,11 @@ public class LongMapper extends SingleColumnMapper.SingleFieldMapper<Long> {
      *
      * @param field the name of the field
      * @param column the name of the column to be mapped
-     * @param indexed if the field supports searching
-     * @param sorted if the field supports sorting
      * @param validated if the field must be validated
      * @param boost the boost
      */
-    public LongMapper(String field, String column, Boolean indexed, Boolean sorted, Boolean validated, Float boost) {
-        super(field,
-              column,
-              indexed,
-              sorted,
-              validated,
-              null,
-              Long.class,
-              AsciiType.instance,
-              ByteType.instance,
-              DecimalType.instance,
-              DoubleType.instance,
-              FloatType.instance,
-              IntegerType.instance,
-              Int32Type.instance,
-              LongType.instance,
-              ShortType.instance,
-              UTF8Type.instance);
+    public LongMapper(String field, String column, Boolean validated, Float boost) {
+        super(field, column, true, validated, null, Long.class, NUMERIC_TYPES_WITH_DATE);
         this.boost = boost == null ? DEFAULT_BOOST : boost;
     }
 
@@ -75,34 +57,36 @@ public class LongMapper extends SingleColumnMapper.SingleFieldMapper<Long> {
     protected Long doBase(String name, Object value) {
         if (value instanceof Number) {
             return ((Number) value).longValue();
+        } else if (value instanceof Date) {
+            return ((Date) value).getTime();
         } else if (value instanceof String) {
             try {
                 return Double.valueOf((String) value).longValue();
             } catch (NumberFormatException e) {
-                throw new IndexException("Field '%s' with value '%s' can not be parsed as long", name, value);
+                throw new IndexException("Field '{}' with value '{}' can not be parsed as long", name, value);
             }
         }
-        throw new IndexException("Field '%s' requires a long, but found '%s'", name, value);
+        throw new IndexException("Field '{}' requires a long, but found '{}'", name, value);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Field indexedField(String name, Long value) {
-        LongField field = new LongField(name, value, STORE);
-        field.setBoost(boost);
-        return field;
+    public Optional<Field> indexedField(String name, Long value) {
+        LongField longField = new LongField(name, value, STORE);
+        longField.setBoost(boost);
+        return Optional.of(longField);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Field sortedField(String name, Long value) {
-        return new NumericDocValuesField(name, value);
+    public Optional<Field> sortedField(String name, Long value) {
+        return Optional.of(new SortedNumericDocValuesField(name, value));
     }
 
     /** {@inheritDoc} */
     @Override
     public SortField sortField(String name, boolean reverse) {
-        return new SortField(name, Type.LONG, reverse);
+        return new SortedNumericSortField(name, Type.LONG, reverse);
     }
 
     /** {@inheritDoc} */

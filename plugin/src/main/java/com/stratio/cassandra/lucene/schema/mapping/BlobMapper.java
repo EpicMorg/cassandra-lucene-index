@@ -1,30 +1,26 @@
 /*
- * Licensed to STRATIO (C) under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.  The STRATIO (C) licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Copyright (C) 2014 Stratio (http://stratio.com)
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.stratio.cassandra.lucene.schema.mapping;
 
 import com.stratio.cassandra.lucene.IndexException;
 import com.stratio.cassandra.lucene.util.ByteBufferUtils;
-import org.apache.cassandra.db.marshal.BytesType;
-import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.utils.Hex;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * A {@link Mapper} to map blob values.
@@ -38,12 +34,10 @@ public class BlobMapper extends KeywordMapper {
      *
      * @param field the name of the field
      * @param column the name of the column to be mapped
-     * @param indexed if the field supports searching
-     * @param sorted if the field supports sorting
      * @param validated if the field must be validated
      */
-    public BlobMapper(String field, String column, Boolean indexed, Boolean sorted, Boolean validated) {
-        super(field, column, indexed, sorted, validated, UTF8Type.instance, BytesType.instance);
+    public BlobMapper(String field, String column, Boolean validated) {
+        super(field, column, validated, Arrays.asList(String.class, ByteBuffer.class));
     }
 
     /** {@inheritDoc} */
@@ -56,7 +50,7 @@ public class BlobMapper extends KeywordMapper {
         } else if (value instanceof String) {
             return base((String) value);
         }
-        throw new IndexException("Field '%s' requires a byte array, but found '%s'", field, value);
+        throw new IndexException("Field '{}' requires a byte array, but found '{}'", field, value);
     }
 
     private String base(ByteBuffer value) {
@@ -72,7 +66,7 @@ public class BlobMapper extends KeywordMapper {
             byte[] bytes = Hex.hexToBytes(value.replaceFirst("0x", ""));
             return Hex.bytesToHex(bytes);
         } catch (NumberFormatException e) {
-            throw new IndexException(e, "Field '%s' requires an hex string, but found '%s'", field, value);
+            throw new IndexException(e, "Field '{}' requires an hex string, but found '{}'", field, value);
         }
     }
 }
